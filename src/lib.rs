@@ -6,8 +6,10 @@ use crate::board_state::initialize_board;
 use crate::board_state::Board;
 
 pub fn start() {
-    let mut board: Board = initialize_board();
+    let board: Board = initialize_board();
     let grid = board.grid;
+    println!("{grid:?}");
+    
 }
 
 

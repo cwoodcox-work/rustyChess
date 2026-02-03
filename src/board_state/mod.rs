@@ -4,41 +4,31 @@ use crate::pieces::Kind;
 use crate::pieces::Color;
 use crate::handle_input::translate_input;
 
-
+#[derive(Eq, Hash, PartialEq,Debug,Clone)]
+pub struct Square {
+    pub x: String,
+    pub y: String,
+}
 pub struct Board {
-    pub grid: HashMap<String,Option<Piece>>,
+    pub grid: HashMap<Square,Option<Piece>>,
     pub turn: Color
 }
 
 pub fn initialize_board() -> Board {
-    let mut grid: HashMap<String,Option<Piece>> = HashMap::new();
-    let turn = Color::White;
-    let mut row = 3;
-    let mut column = 1;
-    for i in 0..64 {
-        if i <32 {
-            
-            create_starting_pieces(&mut grid);        
-        }
-        else {
-            let square = row.to_string() + &column.to_string()[..];
-            grid.insert(square,None);
-            column += 1;
-            if column > 8 {
-                column = 1;
-                row +=1;
-            }
-        }
-    } 
-   
-              
-    Board {
+    let grid: HashMap<Square,Option<Piece>> = HashMap::new();
+    let turn: Color = Color::White;
+    let mut board = Board {
         grid: grid,
         turn: turn,
-    }
+    };
+    clear_board(&mut board);
+    create_initial_pieces(&mut board.grid);
+    return board 
+              
+    
 }
 
-fn create_starting_pieces (grid: &mut HashMap<String,Option<Piece>>) {
+fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>) {
     let mut coordinates: HashMap<Kind, Vec<(i32,i32)>> = HashMap::new();
     coordinates.insert(Kind::Rook, vec![(1,1),(1,8),(8,1),(8,8)]);
     coordinates.insert(Kind::Knight, vec![(2,1),(2,8),(7,1),(7,8)]);
@@ -49,20 +39,43 @@ fn create_starting_pieces (grid: &mut HashMap<String,Option<Piece>>) {
     for (key,val) in coordinates.iter() {
         for item in val {
             let mut color = Color::White;
-            let row = item.1.to_string();
-            let column = item.0.to_string();
+            let y: String = item.1.to_string();
+            let x: String = item.0.to_string();
             if item.1 == 8 || item.1 == 7 {
                 color = Color::Black;
             }
-            let piece = Piece {
+
+            let square: Square = Square {
+                x:x.clone(),
+                y:y.clone(),
+            };
+            let piece: Piece = Piece {
                 kind: key.clone(),
                 color: color,
+                square: square,
             };
-
-            let square: String = column + &row[..];
-            grid.insert(square.clone(),Some(piece));
+            grid.insert(Square { x:x, y:y },Some(piece));
         }
     }
+}
+
+fn clear_board(board: &mut Board) -> &Board {
+    let grid: &mut HashMap<Square, Option<Piece>> = &mut board.grid;
+    let mut x = 1;
+    let mut y = 1;
+    for _i in 0..64 {
+        let square = Square {
+            x:x.to_string(),
+            y:y.to_string(),
+        };
+        grid.insert(square, None);
+        x = x + 1;
+        if x > 8 {
+            x = 1;
+            y = y + 1;
+        }
+    }
+    return board;
 }
 
 pub fn update_board(player_move: String,previous_board: Board) -> Board {

@@ -9,7 +9,7 @@ pub struct Move {
     pub check: bool,
 }
 
-pub fn translate_input(input: String) -> Move {
+pub fn translate_input(input: String) {
     let mut coordinate_x_translate_table: HashMap<&str,&str> = HashMap::from([
         ("a","1"),
         ("b","2"),
@@ -20,5 +20,6 @@ pub fn translate_input(input: String) -> Move {
         ("g","7"),
         ("h","8"),
     ]);
+
 
 }

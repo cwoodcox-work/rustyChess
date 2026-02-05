@@ -1,7 +1,7 @@
 pub mod movement;
 use crate::board_state::Square;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct Piece {
     pub kind: Kind,
     pub color: Color,
@@ -17,7 +17,7 @@ pub enum Kind {
     King,
     Pawn,
 }
-#[derive(Debug)]
+#[derive(Debug,PartialEq,Clone)]
 pub enum Color {
     White,
     Black,

@@ -2,7 +2,7 @@ use crate::board_state::Square;
 use crate::pieces::Piece;
 use crate::pieces::Kind;
 
-fn find_potential_moves(piece: &Piece) -> Vec<Square> {
+pub fn find_potential_moves(piece: &Piece) -> Vec<Square> {
     let potential_moves = match piece.kind {
         Kind::Rook => horizontal(false,&piece.square, false),
         Kind::Bishop => diagonal(false,&piece.square, false),
@@ -16,8 +16,8 @@ fn find_potential_moves(piece: &Piece) -> Vec<Square> {
 }
 
 fn horizontal(limit: bool,location: &Square,pawn: bool) -> Vec<Square> {
-    let mut x: u32 = location.x.clone().parse().expect("Failed to parse integer");
-    let mut y: u32 = location.y.clone().parse().expect("Failed to parse integer");
+    let x: u32 = location.x.clone().parse().expect("Failed to parse integer");
+    let y: u32 = location.y.clone().parse().expect("Failed to parse integer");
     let mut upx: u32 = x+1;
     let mut upy: u32 = y+1;
     let mut downx = x-1;
@@ -28,14 +28,14 @@ fn horizontal(limit: bool,location: &Square,pawn: bool) -> Vec<Square> {
     let mut down = downy >= 1;
     let mut up = upy <=8;
     let mut all_moves = right || left || down || up;
+    let mut pawn_count =1;
     while all_moves {
-        all_moves == false;
-        if right {
+        if right && !pawn {
             moves.push(Square {x:upx.to_string(),y:y.to_string()});
             upx += 1;
             right = upx <=8;
         }
-        if left {
+        if left && !pawn {
             moves.push(Square { x: downx.to_string(), y: y.to_string() });
             downx -= 1;
             left = downx >=1;
@@ -45,14 +45,25 @@ fn horizontal(limit: bool,location: &Square,pawn: bool) -> Vec<Square> {
             upy += 1;
             up = upy <=8;
         }
-        if down {
+        if down && !pawn {
             moves.push(Square { x: x.to_string(), y: downy.to_string()});
             downy -= 1;
             down = downy >= 1;
         }
         all_moves = right || left || down || up;
         if limit == true {
-            return moves;
+            if !pawn {
+                return moves;
+            }
+            else {
+                if pawn_count < 2 {
+                    pawn_count += 1;
+                    continue;
+                }
+                else {
+                    return moves;
+                }
+            }
         }
     }    
     return moves;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::pieces::Piece;
 use crate::pieces::Kind;
 use crate::pieces::Color;
-use crate::handle_input::translate_input;
+use crate::handle_input::move_handler;
 
 #[derive(Eq, Hash, PartialEq,Debug,Clone)]
 pub struct Square {
@@ -14,19 +14,44 @@ pub struct Board {
     pub turn: Color
 }
 
-pub fn initialize_board() -> Board {
-    let grid: HashMap<Square,Option<Piece>> = HashMap::new();
-    let turn: Color = Color::White;
-    let mut board = Board {
-        grid: grid,
-        turn: turn,
-    };
-    clear_board(&mut board);
-    create_initial_pieces(&mut board.grid);
-    return board 
-              
+impl Board {
+    pub fn update_board(&mut self, player_move: String) {
+        move_handler(self,player_move);
+    }
     
+    pub fn clear_board(&mut self) {
+        let grid: &mut HashMap<Square, Option<Piece>> = &mut self.grid;
+        let mut x = 1;
+        let mut y = 1;
+        for _i in 0..64 {
+            let square = Square {
+                x:x.to_string(),
+                y:y.to_string(),
+            };
+            grid.insert(square, None);
+            x = x + 1;
+            if x > 8 {
+                x = 1;
+                y = y + 1;
+            }
+        }
+    }
+
+    pub fn initialize_board() -> Self {
+        let grid: HashMap<Square,Option<Piece>> = HashMap::new();
+        let turn: Color = Color::White;
+        let mut board = Self {
+            grid: grid,
+            turn: turn,
+        };
+        board.clear_board();
+        create_initial_pieces(&mut board.grid);
+        return board 
+               
+    }
 }
+
+
 
 fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>) {
     let mut coordinates: HashMap<Kind, Vec<(i32,i32)>> = HashMap::new();
@@ -59,27 +84,4 @@ fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>) {
     }
 }
 
-fn clear_board(board: &mut Board) -> &Board {
-    let grid: &mut HashMap<Square, Option<Piece>> = &mut board.grid;
-    let mut x = 1;
-    let mut y = 1;
-    for _i in 0..64 {
-        let square = Square {
-            x:x.to_string(),
-            y:y.to_string(),
-        };
-        grid.insert(square, None);
-        x = x + 1;
-        if x > 8 {
-            x = 1;
-            y = y + 1;
-        }
-    }
-    return board;
-}
-
-pub fn update_board(player_move: String,previous_board: Board) -> Board {
-    let player_move = translate_input(player_move);
-    return previous_board;
-}
   

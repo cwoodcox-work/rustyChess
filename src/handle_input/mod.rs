@@ -35,8 +35,8 @@ pub fn move_handler(board: &mut Board, input: String)  {
             Some(i) =>(i.square.clone(),i.kind.clone(),i.color.clone()),
             None => continue,
         };
-        if pos_piece.1 == new_move.piece.kind && pos_piece.2 == new_move.piece.color {
-            from_piece.push(pos_piece)
+        if pos_piece.1 == new_move.piece.kind && pos_piece.2 == new_move.piece.color && new_move.piece.color == board.turn {
+            from_piece.push(pos_piece);
         }
     }
     
@@ -47,6 +47,10 @@ pub fn move_handler(board: &mut Board, input: String)  {
         };
         board.grid.insert(new_location,None);
         board.grid.insert(new_move.square,Some(new_move.piece));
+        board.turn = match board.turn {
+            Color::Black => Color::White,
+            Color::White => Color::Black,
+        };
     }   
 
 }

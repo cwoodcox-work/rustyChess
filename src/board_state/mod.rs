@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::handle_input::MoveError;
 use crate::pieces::Piece;
 use crate::pieces::Kind;
 use crate::pieces::Color;
@@ -17,8 +18,11 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn update_board(&mut self, player_move: String) {
-        move_handler(self,player_move);
+    pub fn update_board(&mut self, player_move: String) -> Result<(), MoveError> {
+        match move_handler(self,player_move) {
+            Ok(_) => return Ok(()),
+            Err(e) => return Err(e),
+        };
     }
     
     pub fn clear_board(&mut self) {

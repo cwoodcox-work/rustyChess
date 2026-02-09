@@ -9,8 +9,10 @@ pub fn start() {
     let mut board: Board = Board::initialize_board();
     loop {
         let input = take_input();
-        board.update_board(input);
-        board.print_board();
+        match board.update_board(input) {
+            Ok(_) => board.print_board(),
+            Err(e) => print!("{e}"),
+        }
     }
     
 }

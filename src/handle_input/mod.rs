@@ -1,3 +1,4 @@
+use core::fmt;
 use std::collections::HashMap;
 use std::io;
 use crate::board_state::Square;
@@ -11,6 +12,22 @@ pub struct Move {
     pub square: Square,
     pub kind: Kind,
 }
+#[derive(Debug)]
+pub enum MoveError {
+    AmbiguousMove,
+    OccupiedSameColor,
+    NoPieceToMove,
+}
+
+impl fmt::Display for MoveError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MoveError::AmbiguousMove => write!(f, "Need to specify the original location of the piece being moved."),
+            MoveError::NoPieceToMove => write!(f, "There is no possible piece to move to the square provided."),
+            MoveError::OccupiedSameColor => write!(f, "The square given is already occupied by your own piece."),
+        }
+    }
+}
 
 pub fn take_input() -> String {
     println!("Enter your move in chess notation. Example: Nf3");
@@ -23,13 +40,16 @@ pub fn take_input() -> String {
 
 }
 
-pub fn move_handler(board: &mut Board, input: String)  {
+pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> {
     let new_move = translate_input(input,board);
+    if new_move.capture == (false,1) {
+        return Err(MoveError::OccupiedSameColor);
+    }
     let potential_moves = find_potential_moves(&new_move,&board);
     if potential_moves.len() > 1 {
-        panic!("move is ambiguous");
+        return Err(MoveError::AmbiguousMove);
     }
-    else {
+    else if potential_moves.len() == 1 {
         let points = new_move.capture;
         let og_square = Square {x:potential_moves[0].x.clone(),y:potential_moves[0].y.clone()};
         let piece_moving = match board.grid.remove(&og_square).unwrap() {
@@ -49,7 +69,11 @@ pub fn move_handler(board: &mut Board, input: String)  {
             };
         }
         board.move_count += 1;
+        return Ok(());
     }  
+    else {
+        return Err(MoveError::NoPieceToMove);
+    }
 
 }
 

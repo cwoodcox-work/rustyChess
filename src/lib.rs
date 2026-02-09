@@ -18,7 +18,7 @@ pub fn start() {
     };
     let variable = match board.grid.get(&square).unwrap() {
         Some(i) => true,
-        None => true,
+        None => false,
     };
     if variable {
         println!("it worked");

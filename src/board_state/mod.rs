@@ -11,7 +11,8 @@ pub struct Square {
 }
 pub struct Board {
     pub grid: HashMap<Square,Option<Piece>>,
-    pub turn: Color
+    pub turn: Color,
+    pub score: HashMap<Color,u32>,
 }
 
 impl Board {
@@ -40,9 +41,14 @@ impl Board {
     pub fn initialize_board() -> Self {
         let grid: HashMap<Square,Option<Piece>> = HashMap::new();
         let turn: Color = Color::White;
+        let score: HashMap<Color,u32> = HashMap::from([
+            (Color::White,39),
+            (Color::Black,39),
+        ]);
         let mut board = Self {
             grid: grid,
             turn: turn,
+            score: score,
         };
         board.clear_board();
         create_initial_pieces(&mut board.grid);

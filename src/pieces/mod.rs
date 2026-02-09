@@ -17,7 +17,20 @@ pub enum Kind {
     King,
     Pawn,
 }
-#[derive(Debug,PartialEq,Clone)]
+
+impl Kind {
+    pub fn points(&self) -> u32 {
+        match self {
+            Kind::Bishop => 3,
+            Kind::Knight => 3,
+            Kind::Pawn => 1,
+            Kind::Rook => 5,
+            Kind::Queen => 9,
+            Kind::King => 10,
+        }
+    }
+}
+#[derive(Debug,PartialEq,Clone,Eq,Hash)]
 pub enum Color {
     White,
     Black,

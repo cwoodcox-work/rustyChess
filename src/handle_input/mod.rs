@@ -8,11 +8,9 @@ use crate::pieces::movement::find_potential_moves;
 use crate::board_state::Board;
 
 pub struct Move {
-    pub piece: Piece,
+    pub capture: (bool,u32),
     pub square: Square,
-    pub capture: bool,
-    pub castle: bool,
-    pub check: bool,
+    pub kind: Kind,
 }
 
 pub fn take_input() -> String {
@@ -27,35 +25,35 @@ pub fn take_input() -> String {
 }
 
 pub fn move_handler(board: &mut Board, input: String)  {
-    let new_move = translate_input(input,&board.turn);
-    let potential_moves = find_potential_moves(&new_move.piece);
-    let mut from_piece = Vec::new();
-    for square in potential_moves.iter() {
-        let pos_piece = match board.grid.get(square).unwrap() {
-            Some(i) =>(i.square.clone(),i.kind.clone(),i.color.clone()),
-            None => continue,
-        };
-        if pos_piece.1 == new_move.piece.kind && pos_piece.2 == new_move.piece.color && new_move.piece.color == board.turn {
-            from_piece.push(pos_piece);
-        }
+    let new_move = translate_input(input,board);
+    let potential_moves = find_potential_moves(&new_move,&board);
+    if potential_moves.len() > 1 {
+        panic!("move is ambiguous");
     }
-    
-    if from_piece.len() == 1 {
-        let new_location = Square {
-        x:from_piece[0].0.x.clone(),
-        y:from_piece[0].0.y.clone(),
+    else {
+        let points = new_move.capture;
+        let og_square = Square {x:potential_moves[0].x.clone(),y:potential_moves[0].y.clone()};
+        let piece_moving = match board.grid.remove(&og_square).unwrap() {
+            Some(i) => i,
+            None => panic!("this should never happen"),
         };
-        board.grid.insert(new_location,None);
-        board.grid.insert(new_move.square,Some(new_move.piece));
+        board.grid.insert(og_square,None);
+        board.grid.insert(new_move.square,Some(piece_moving));
         board.turn = match board.turn {
             Color::Black => Color::White,
             Color::White => Color::Black,
         };
-    }   
+        if points.0 {
+            match board.score.get_mut(&board.turn) {
+                Some(i) => *i -= points.1,
+                None => panic!("Shouldn't happen"),
+            };
+        }
+    }  
 
 }
 
-fn translate_input(input: String,turn: &Color)  -> Move{
+fn translate_input(input: String,board: &Board)  -> Move{
     let mut the_move = Vec::new();
     let coordinate_x_translate_table: HashMap<char,char> = HashMap::from([
         ('a','1'),
@@ -69,33 +67,41 @@ fn translate_input(input: String,turn: &Color)  -> Move{
     for char in input.chars() {
         the_move.push(char);
     }
+    if the_move.len() == 2{
+        the_move.insert(0,'P');
+    }
     let kind = match the_move[0] {
         'N' => Kind::Knight,
         'K' => Kind::King,
         'Q' => Kind::Queen,
         'R' => Kind::Rook,
         'B' => Kind::Bishop,
-        _ => panic!(),
-    };
-    let color = match turn {
-        Color::White => Color::White,
-        Color::Black => Color::Black,
+        'P' => Kind::Pawn,
+         _  => panic!(),
     };
     let x = match coordinate_x_translate_table.get(&the_move[1].to_lowercase().to_string().chars().next().unwrap()) {
         Some(i) => i,
-        None => panic!(),
+        None => panic!("incorrect format"),
     };
         
     let new_square = Square {
         x:x.to_string(),
         y:the_move[2].to_string(),
     };  
+    let capture:(bool,u32) = match board.grid.get(&new_square).unwrap() {
+        Some(i) => if i.color==board.turn {
+            (false,1)
+        }
+        else {
+            (true,i.kind.points())
+        },
+
+        None => (false,0), 
+    };
     return Move {
-        piece: Piece {kind: kind, color: color, square: new_square},
-        square:Square {x:x.to_string(),y:the_move[2].to_string()},
-        capture: false,
-        castle: false,
-        check: false,
+        capture: capture,
+        square: new_square,
+        kind: kind,
     };
      
     

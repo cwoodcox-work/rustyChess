@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::io;
 use crate::board_state::Square;
-use crate::pieces::Piece;
 use crate::pieces::Kind;
 use crate::pieces::Color;
 use crate::pieces::movement::find_potential_moves;
@@ -49,6 +48,7 @@ pub fn move_handler(board: &mut Board, input: String)  {
                 None => panic!("Shouldn't happen"),
             };
         }
+        board.move_count += 1;
     }  
 
 }

@@ -13,6 +13,7 @@ pub struct Board {
     pub grid: HashMap<Square,Option<Piece>>,
     pub turn: Color,
     pub score: HashMap<Color,u32>,
+    pub move_count: u32,
 }
 
 impl Board {
@@ -45,15 +46,44 @@ impl Board {
             (Color::White,39),
             (Color::Black,39),
         ]);
+        let count: u32 = 0;
         let mut board = Self {
             grid: grid,
             turn: turn,
             score: score,
+            move_count: count,
         };
         board.clear_board();
         create_initial_pieces(&mut board.grid);
         return board 
                
+    }
+
+    pub fn print_board(&self) {
+        for y in (1..=8).rev() {
+            let mut row = String::new();
+            for x in 1..=8 {
+                let square = Square {
+                    x:x.to_string(),
+                    y:y.to_string(),
+                };
+                let mut piece_string: &str = " ";
+                if let Some(i) = self.grid.get(&square).unwrap() {
+                    let piece = i;
+                    piece_string = match piece.kind {
+                    Kind::Rook => "R",
+                    Kind::Knight => "N",
+                    Kind::Bishop => "B",
+                    Kind::Queen => "Q",
+                    Kind::King => "K",
+                    Kind::Pawn => "P",
+                    };
+
+                }
+                row.push_str(piece_string);
+            }
+            println!("{row}");
+        }
     }
 }
 

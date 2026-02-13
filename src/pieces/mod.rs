@@ -5,8 +5,10 @@ use crate::board_state::Square;
 pub struct Piece {
     pub kind: Kind,
     pub color: Color,
-    pub square: Square,
+    pub square: Option<Square>,
 }
+
+
 
 #[derive(Eq, Hash, PartialEq,Clone,Debug)]
 pub enum Kind {

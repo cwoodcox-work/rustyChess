@@ -1,9 +1,10 @@
 use crate::board_state::Board;
 use crate::board_state::Square;
 use crate::handle_input::Move;
+use crate::handle_input::MoveError;
 use crate::pieces::Kind;
 
-pub fn find_potential_moves(new_move: &Move,board: &Board) -> Vec<Square> {
+pub fn find_potential_moves(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {
     let potential_moves = match new_move.kind {
         Kind::Rook => horizontal(false,&new_move, false,board),
         Kind::Bishop => diagonal(false,&new_move, false,board),
@@ -12,13 +13,20 @@ pub fn find_potential_moves(new_move: &Move,board: &Board) -> Vec<Square> {
         Kind::Pawn => combine_movement(true,&new_move,true,board),
         Kind::Queen => combine_movement(false,&new_move,false,board),
     };
-    return potential_moves;
-
+    match potential_moves {
+        Ok(i) => return Ok(i),
+        Err(m) => return Err(m),
+    };
 }
 
-fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Vec<Square> {
+fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Result<Vec<Square>,MoveError> {
     let x: u32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
     let y: u32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
+    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),board.turn.clone())) {
+        Some(i) => i,
+        None => return Err(MoveError::NoPieceToMove),
+    };
+    let mut pawn_count = 1;
     let mut upx: u32 = x+1;
     let mut upy: u32 = y+1;
     let mut downx = x-1;
@@ -29,7 +37,6 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Vec<Squar
     let mut down = downy >= 1;
     let mut up = upy <= 8;
     let mut all_moves = right || left || down || up;
-    let mut pawn_count = 1;
     while all_moves {
         if right && !pawn {
             let mut blocked = false;
@@ -41,7 +48,15 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Vec<Squar
             match occupied {
                 Some(i) => if i {
                     blocked = true;
-                    moves.push(potential_square);
+                    for sq in piece_list {
+                        if *sq == potential_square {
+                            moves.push(potential_square);
+                            break;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
                 }
                 else {
                     blocked = true;
@@ -57,13 +72,18 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Vec<Squar
             let mut blocked = false;
             let potential_square = Square {x:downx.to_string(),y:y.to_string()};
             let occupied = match board.grid.get(&potential_square).unwrap() {
-                Some(i) => Some(i.color == board.turn),
+                Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
                 None => None,
             };
             match occupied {
                 Some(i) => if i {
                     blocked = true;
-                    moves.push(potential_square);
+                    for sq in piece_list {
+                        if *sq == potential_square {
+                            moves.push(potential_square);
+                            break;
+                        }
+                    }
                 }
                 else {
                     blocked = true;
@@ -75,17 +95,25 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Vec<Squar
                 left = false;
             } 
         }
-        if up && !pawn {
+        if up  {
             let mut blocked = false;
             let potential_square = Square {x:x.to_string(),y:upy.to_string()};
             let occupied = match board.grid.get(&potential_square).unwrap() {
-                Some(i) => Some(i.color == board.turn),
+                Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
                 None => None,
             };
             match occupied {
                 Some(i) => if i {
                     blocked = true;
-                    moves.push(potential_square);
+                    for sq in piece_list {
+                        if *sq == potential_square {
+                            moves.push(potential_square);
+                            break;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
                 }
                 else {
                     blocked = true;
@@ -101,13 +129,21 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Vec<Squar
             let mut blocked = false;
             let potential_square = Square {x:x.to_string(),y:downy.to_string()};
             let occupied = match board.grid.get(&potential_square).unwrap() {
-                Some(i) => Some(i.color == board.turn),
+                Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
                 None => None,
             };
             match occupied {
                 Some(i) => if i {
                     blocked = true;
-                    moves.push(potential_square);
+                    for sq in piece_list {
+                        if *sq == potential_square {
+                            moves.push(potential_square);
+                            break;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
                 }
                 else {
                     blocked = true;
@@ -122,26 +158,30 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Vec<Squar
         all_moves = right || left || down || up;
         if limit == true {
             if !pawn {
-                return moves;
+                return Ok(moves);
             }
             else {
-                if pawn_count < 2 {
+                if pawn_count < 2 && moves.is_empty() {
                     pawn_count += 1;
                     continue;
                 }
                 else {
-                    return moves;
+                    return Ok(moves);
                 }
             }
         }
-    }    
-    return moves;
+    }  
+    return Ok(moves);
 }
 
-fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Vec<Square> {
+fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Result<Vec<Square>,MoveError> {
     let mut moves: Vec<Square> = Vec::new();
-    let x: u32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
-    let y: u32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
+    let x: i32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
+    let y: i32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
+    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),board.turn.clone())) {
+        Some(i) => i,
+        None => return Err(MoveError::NoPieceToMove),
+    };
     let mut upx = x+1;
     let mut upy = y+1;
     let mut downx = x-1;
@@ -157,17 +197,25 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Vec<Squar
     let mut blockeddl = false;
     let mut all_moves = right || left || down || up;
     while all_moves {
-        if up && !pawn {
+        if up {
             if right && !blockedur {
                 let potential_square = Square {x:upx.to_string(),y:upy.to_string()};
                 let occupied = match board.grid.get(&potential_square).unwrap() {
-                    Some(i) => Some(i.color == board.turn),
+                    Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
                     None => None,
                 };
                 match occupied {
                     Some(i) => if i {
                         blockedur = true;
-                        moves.push(potential_square);
+                        for sq in piece_list {
+                            if *sq == potential_square {
+                                moves.push(potential_square);
+                                break;
+                            }
+                            else {
+                                continue;
+                            }
+                        }
                     }
                     else {
                         blockedur = true;
@@ -178,13 +226,21 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Vec<Squar
             if left && !blockedul {
                 let potential_square = Square {x:downx.to_string(),y:upy.to_string()};
                 let occupied = match board.grid.get(&potential_square).unwrap() {
-                    Some(i) => Some(i.color == board.turn),
+                    Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
                     None => None,
                 };
                 match occupied {
                     Some(i) => if i {
                         blockedul = true;
-                        moves.push(potential_square);
+                        for sq in piece_list {
+                            if *sq == potential_square {
+                                moves.push(potential_square);
+                                break;
+                            }
+                            else {
+                                continue;
+                            }
+                        }
                     }
                     else {
                         blockedul = true;
@@ -197,13 +253,21 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Vec<Squar
             if right && !blockeddr {
                 let potential_square = Square {x:upx.to_string(),y:downy.to_string()};
                 let occupied = match board.grid.get(&potential_square).unwrap() {
-                    Some(i) => Some(i.color == board.turn),
+                    Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
                     None => None,
                 };
                 match occupied {
                     Some(i) => if i {
                         blockeddr = true;
-                        moves.push(potential_square);
+                        for sq in piece_list {
+                            if *sq == potential_square {
+                                moves.push(potential_square);
+                                break;
+                            }
+                            else {
+                                continue;
+                            }
+                        }
                     }
                     else {
                         blockeddr = true;
@@ -214,13 +278,21 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Vec<Squar
             if left && !blockeddl {
                 let potential_square = Square {x:downx.to_string(),y:downy.to_string()};
                 let occupied = match board.grid.get(&potential_square).unwrap() {
-                    Some(i) => Some(i.color == board.turn),
+                    Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
                     None => None,
                 };
                 match occupied {
                     Some(i) => if i {
                         blockeddl = true;
-                        moves.push(potential_square);
+                        for sq in piece_list {
+                            if *sq == potential_square {
+                                moves.push(potential_square);
+                                break;
+                            }
+                            else {
+                                continue;
+                            }
+                        }
                     }
                     else {
                         blockeddl = true;
@@ -230,7 +302,7 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Vec<Squar
             }
         }
         if limit || pawn {
-            return moves;
+            return Ok(moves);
         }
         upy += 1;
         downy-=1;
@@ -243,38 +315,70 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Vec<Squar
         all_moves = right || left || down || up;
 
     }
-    return moves;
+    return Ok(moves);
 }
 
-fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Vec<Square> {
-    let mut diagonal = diagonal(limit,&new_move,pawn,board);
-    let mut horizontal = horizontal(limit,&new_move,pawn,board);
-    diagonal.append(&mut horizontal);
-    return diagonal;
-}
-
-fn lshape(new_move: &Move,board: &Board) -> Vec<Square> {
-    let mut moves: Vec<Square> = Vec::new();
-    let x: u32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
-    let y: u32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
-    let coordinates: [(u32,u32);8] = [(x-1,y+2),(x+1,y+2),(x+2,y+1),(x+2,y-1),(x+1,y-2),(x-1,y-2),(x-2,y+1),(x-2,y-1)];
-    for point in coordinates.iter() {
-        let potential_square = Square {x:point.0.to_string(),y:point.1.to_string()};
-        let mut blocked = false;
-        let mut dif_color = false;
-        match board.grid.get(&potential_square).unwrap() {
-            Some(i) => if i.color == board.turn && i.kind == new_move.kind {
-                blocked = true;
-                }
-            else {
-                blocked = true;
-                dif_color = true;
-            }
-            None => blocked = false,
-        };
-        if blocked && !dif_color {
-            moves.push(potential_square);
-        }
+fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Result<Vec<Square>,MoveError> {
+    let mut horizontal = match horizontal(limit,&new_move,pawn,board) {
+        Ok(list) => list,
+        Err(m) => return Err(m),
+    };
+    let mut diagonal = match diagonal(limit,&new_move,pawn,board) {
+        Ok(list) => list,
+        Err(m) => return Err(m),
+    };
+    if !pawn {
+        diagonal.append(&mut horizontal);
+        return Ok(diagonal);
     }
-    return moves;
+    else if new_move.capture.0 {
+        return Ok(diagonal);
+    }
+    else {
+        return Ok(horizontal);
+    }
+}
+
+fn lshape(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {
+    let mut moves: Vec<Square> = Vec::new();
+    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),board.turn.clone())) {
+        Some(i) => i,
+        None => return Err(MoveError::NoPieceToMove),
+    };
+    let x: i32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
+    let y: i32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
+    let coordinates: [(i32,i32);8] = [(x-1,y+2),(x+1,y+2),(x+2,y+1),(x+2,y-1),(x+1,y-2),(x-1,y-2),(x-2,y+1),(x-2,y-1)];
+    for point in coordinates.iter() {
+        if point.0 >= 1 && point.1 >= 1 && point.0 <= 8 && point.1 <= 8 {
+            let potential_square = Square {x:point.0.to_string(),y:point.1.to_string()};
+            let mut blocked = false;
+            let mut dif_color = false;
+            match board.grid.get(&potential_square).unwrap() {
+                Some(i) => if i.color == board.turn && i.kind == new_move.kind {
+                    blocked = true;
+                    }
+                else {
+                    blocked = true;
+                    dif_color = true;
+                }
+                None => blocked = false,
+            };
+            if blocked && !dif_color {
+                for sq in piece_list {
+                    if *sq == potential_square {
+                        moves.push(potential_square);
+                        break;
+                    }
+                    else {
+                        continue;
+                    }
+                }
+            }
+        
+            }
+            else {
+                continue;
+            }
+    }
+    return Ok(moves);
 }

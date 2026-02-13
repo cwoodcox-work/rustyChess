@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use crate::handle_input::MoveError;
 use crate::pieces::Piece;
 use crate::pieces::Kind;
@@ -15,6 +16,7 @@ pub struct Board {
     pub turn: Color,
     pub score: HashMap<Color,u32>,
     pub move_count: u32,
+    pub piece_registry: HashMap<(Kind,Color),HashSet<Square>>,
 }
 
 impl Board {
@@ -45,6 +47,7 @@ impl Board {
 
     pub fn initialize_board() -> Self {
         let grid: HashMap<Square,Option<Piece>> = HashMap::new();
+        let registry: HashMap<(Kind,Color),HashSet<Square>> = HashMap::new();
         let turn: Color = Color::White;
         let score: HashMap<Color,u32> = HashMap::from([
             (Color::White,39),
@@ -56,9 +59,10 @@ impl Board {
             turn: turn,
             score: score,
             move_count: count,
+            piece_registry: registry,
         };
         board.clear_board();
-        create_initial_pieces(&mut board.grid);
+        create_initial_pieces(&mut board.grid, &mut board.piece_registry);
         return board 
                
     }
@@ -89,11 +93,18 @@ impl Board {
             println!("{row}");
         }
     }
+
+    pub fn show_score(&self) {
+        let white = self.score.get(&Color::White).unwrap();
+        let black = self.score.get(&Color::Black).unwrap();
+        println!("The score is: ");
+        println!("White: {white} Black: {black} ");
+    }
 }
 
 
 
-fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>) {
+fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>,registry: &mut HashMap<(Kind,Color),HashSet<Square>>) {
     let mut coordinates: HashMap<Kind, Vec<(i32,i32)>> = HashMap::new();
     coordinates.insert(Kind::Rook, vec![(1,1),(1,8),(8,1),(8,8)]);
     coordinates.insert(Kind::Knight, vec![(2,1),(2,8),(7,1),(7,8)]);
@@ -116,9 +127,17 @@ fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>) {
             };
             let piece: Piece = Piece {
                 kind: key.clone(),
-                color: color,
-                square: square,
+                color: color.clone(),
+                square: Some(square.clone()),
             };
+            let kind = key.clone();
+            let reg_key = (kind,color.clone());
+            if let Some(i) = registry.get_mut(&reg_key) {
+                i.insert(square);
+            }
+            else {
+                registry.entry(reg_key).or_insert(HashSet::from([square]));
+            }
             grid.insert(Square { x:x, y:y },Some(piece));
         }
     }

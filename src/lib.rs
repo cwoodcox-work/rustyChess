@@ -13,6 +13,7 @@ pub fn start() {
             Ok(_) => board.print_board(),
             Err(e) => print!("{e}"),
         }
+        board.show_score();
     }
     
 }

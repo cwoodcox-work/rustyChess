@@ -93,7 +93,6 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                 Some(i) => (i.kind.clone(),i.color.clone()),
                 None => panic!("this should never happend since we know this is a capture"),
         };       
-        board.piece_registry.get_mut(&old_kind).unwrap().remove(&new_move.square);
         if points.0 {
             match board.score.get_mut(&board.turn) {
                 Some(i) => *i -= points.1,

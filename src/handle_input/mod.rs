@@ -88,16 +88,23 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
             };
             piece_list.remove(&og_square);
             piece_list.insert(new_move.square.clone());
-        }
-        let old_kind = match board.grid.get(&og_square).unwrap() {
-                Some(i) => (i.kind.clone(),i.color.clone()),
-                None => panic!("this should never happend since we know this is a capture"),
-        };       
+        }      
         if points.0 {
             match board.score.get_mut(&board.turn) {
                 Some(i) => *i -= points.1,
                 None => panic!("Shouldn't happen"),
+            };                
+            let old_kind = match board.grid.get(&new_move.square).unwrap() {
+                    Some(i) => (i.kind.clone(),i.color.clone()),
+                    None => panic!("this should never happend since we know this is a capture"),
             };
+            {
+                let piece_list = match board.piece_registry.get_mut(&old_kind) {
+                    Some(i) => i,
+                    None => return Err(MoveError::OccupiedSameColor),                    
+                };
+                piece_list.remove(&new_move.square);
+            }
         }
         let piece_moving = match board.grid.get(&og_square).unwrap() {
             Some(i) => i.clone(),

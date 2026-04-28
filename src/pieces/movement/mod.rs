@@ -12,6 +12,7 @@ pub fn find_potential_moves(new_move: &Move,board: &Board) -> Result<Vec<Square>
         Kind::Knight => lshape(&new_move,board),
         Kind::Pawn => combine_movement(true,&new_move,true,board),
         Kind::Queen => combine_movement(false,&new_move,false,board),
+        Kind::Castle => castle(&new_move,board),
     };
     match potential_moves {
         Ok(i) => return Ok(i),
@@ -381,4 +382,27 @@ fn lshape(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {
             }
     }
     return Ok(moves);
+}
+
+fn castle(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {
+    let mut moves: Vec<Square> = Vec::new();
+    moves.push(new_move.square.clone());
+    let king_space = Square {
+        x:new_move.old_mov.0.to_string(),
+        y:new_move.old_mov.1.to_string(),
+    };
+    moves.push(king_space.clone());
+    let start: u32 = new_move.square.x.parse().unwrap();
+    let end: u32 = king_space.x.parse::<u32>().unwrap() + 1;
+    for _i in start..end {
+        let temp_square = Square {
+            x:_i.to_string(),
+            y:king_space.y.clone(),
+        };
+        match board.grid.get(&temp_square) {
+            Some(t) => return Err(MoveError::Castling),
+            None => continue,
+        }
+    }
+    Ok(moves)
 }

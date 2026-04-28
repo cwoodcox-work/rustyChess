@@ -23,6 +23,7 @@ pub enum MoveError {
     OccupiedSameColor,
     NoPieceToMove,
     WrongFormat,
+    Castling,
 }
 
 impl fmt::Display for MoveError {
@@ -32,6 +33,7 @@ impl fmt::Display for MoveError {
             MoveError::NoPieceToMove => write!(f, "There is no possible piece to move to the square provided. "),
             MoveError::OccupiedSameColor => write!(f, "The square given is already occupied by your own piece. "),
             MoveError::WrongFormat => write!(f, "Whatever you entered, doesn't seem to be in the correct format. "),
+            MoveError::Castling => write!(f, "Cannot castle"),
         }
     }
 }
@@ -52,7 +54,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         Ok(mov) => mov,
         Err(error) => return Err(error),
     };
-
+    let castle = new_move.kind.clone() == Kind::Castle;
+        
     let potential_moves = match find_potential_moves(&new_move,&board) {
         Ok(list) => list,
         Err(m) => return Err(m),
@@ -60,7 +63,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
     
     let mut loo = false;
     let mut fin_move = Square{x:"0".to_string(), y:"0".to_string()};
-    if potential_moves.len() > 1 && new_move.old_mov.0 != '0' {
+    if potential_moves.len() > 1 && new_move.old_mov.0 != '0' && !castle {
         loo = true;
         for sq in &potential_moves {
             if sq.x == new_move.old_mov.0.to_string() && sq.y == new_move.old_mov.0.to_string() {
@@ -119,6 +122,206 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         board.move_count += 1;
         return Ok(());
     }  
+    else if castle {
+        let king_space = potential_moves[0].clone();
+        let rook_space = potential_moves[1].clone();
+        if board.turn.clone() == Color::White {
+            if rook_space.x == '1'.to_string() {
+                let queen_side_rook = Square {
+                    x:'4'.to_string(),
+                    y:'1'.to_string(),
+                };
+                let queen_side_king = Square {
+                    x:'3'.to_string(),
+                    y:'1'.to_string(),
+                };
+                {
+                    let king_list = match board.piece_registry.get_mut(&(Kind::King,board.turn.clone())) {
+                        Some(i) => i,
+                        None => return Err(MoveError::NoPieceToMove),
+                    };
+                    king_list.remove(&king_space);
+                    king_list.insert(queen_side_king.clone()); 
+                }
+                {
+                    let rook_list = match board.piece_registry.get_mut(&(Kind::Rook,board.turn.clone())) {
+                        Some(i) => i,
+                        None => return Err(MoveError::NoPieceToMove),
+                    };
+                    rook_list.remove(&rook_space);
+                    rook_list.insert(queen_side_rook.clone());
+                }       
+                {                   
+                    let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+                    board.grid.insert(rook_space.clone(),None);
+                    board.grid.insert(queen_side_rook,Some(piece_moving));
+                }
+                {
+                   let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+                    board.grid.insert(king_space,None);
+                    board.grid.insert(queen_side_king,Some(piece_moving)); 
+                }
+                board.turn = match board.turn {
+                    Color::Black => Color::White,
+                    Color::White => Color::Black,
+                };
+                board.move_count += 1;
+                return Ok(());
+            }
+            else {
+                let king_side_rook = Square {
+                    x:'6'.to_string(),
+                    y:'1'.to_string(),
+                };
+                let king_side_king = Square {
+                    x:'7'.to_string(),
+                    y:'1'.to_string(),
+                };
+                {
+                    let king_list = match board.piece_registry.get_mut(&(Kind::King,board.turn.clone())) {
+                        Some(i) => i,
+                        None => return Err(MoveError::NoPieceToMove),
+                    };
+                    king_list.remove(&king_space);
+                    king_list.insert(king_side_king.clone()); 
+                }
+                {
+                    let rook_list = match board.piece_registry.get_mut(&(Kind::Rook,board.turn.clone())) {
+                        Some(i) => i,
+                        None => return Err(MoveError::NoPieceToMove),
+                    };
+                    rook_list.remove(&rook_space);
+                    rook_list.insert(king_side_rook.clone());
+                }        
+                {                   
+                    let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+                    board.grid.insert(rook_space.clone(),None);
+                    board.grid.insert(king_side_rook,Some(piece_moving));
+                }
+                {
+                   let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+                    board.grid.insert(king_space,None);
+                    board.grid.insert(king_side_king,Some(piece_moving)); 
+                }
+                board.turn = match board.turn {
+                    Color::Black => Color::White,
+                    Color::White => Color::Black,
+                };
+                board.move_count += 1;
+                return Ok(());
+            }            
+        } 
+        else {
+            if rook_space.x == '1'.to_string() {
+                let queen_side_rook = Square {
+                    x:'4'.to_string(),
+                    y:'8'.to_string(),
+                };
+                let queen_side_king = Square {
+                    x:'3'.to_string(),
+                    y:'8'.to_string(),
+                };
+                {
+                    let king_list = match board.piece_registry.get_mut(&(Kind::King,board.turn.clone())) {
+                        Some(i) => i,
+                        None => return Err(MoveError::NoPieceToMove),
+                    };
+                    king_list.remove(&king_space);
+                    king_list.insert(queen_side_king.clone()); 
+                }
+                {
+                    let rook_list = match board.piece_registry.get_mut(&(Kind::Rook,board.turn.clone())) {
+                        Some(i) => i,
+                        None => return Err(MoveError::NoPieceToMove),
+                    };
+                    rook_list.remove(&rook_space);
+                    rook_list.insert(queen_side_rook.clone());
+                }        
+                {                   
+                    let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+                    board.grid.insert(rook_space.clone(),None);
+                    board.grid.insert(queen_side_rook,Some(piece_moving));
+                }
+                {
+                   let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+                    board.grid.insert(king_space,None);
+                    board.grid.insert(queen_side_king,Some(piece_moving)); 
+                }
+                board.turn = match board.turn {
+                    Color::Black => Color::White,
+                    Color::White => Color::Black,
+                };
+                board.move_count += 1;
+                return Ok(());
+            }
+            else {
+                let king_side_rook = Square {
+                    x:'6'.to_string(),
+                    y:'8'.to_string(),
+                };
+                let king_side_king = Square {
+                    x:'7'.to_string(),
+                    y:'8'.to_string(),
+                };
+                {
+                    let king_list = match board.piece_registry.get_mut(&(Kind::King,board.turn.clone())) {
+                        Some(i) => i,
+                        None => return Err(MoveError::NoPieceToMove),
+                    };
+                    king_list.remove(&king_space);
+                    king_list.insert(king_side_king.clone()); 
+                }
+                {
+                    let rook_list = match board.piece_registry.get_mut(&(Kind::Rook,board.turn.clone())) {
+                        Some(i) => i,
+                        None => return Err(MoveError::NoPieceToMove),
+                    };
+                    rook_list.remove(&rook_space);
+                    rook_list.insert(king_side_rook.clone());
+                }
+                {                           
+                    let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+                    board.grid.insert(rook_space.clone(),None);
+                    board.grid.insert(king_side_rook,Some(piece_moving));
+                }
+                {
+                    let piece_moving = match board.grid.get(&king_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+                    board.grid.insert(king_space,None);
+                    board.grid.insert(king_side_king,Some(piece_moving));
+                }
+                board.turn = match board.turn {
+                    Color::Black => Color::White,
+                    Color::White => Color::Black,
+                };
+                board.move_count += 1;
+                return Ok(());
+            } 
+        }
+    }
     else {
         return Err(MoveError::NoPieceToMove);
     }
@@ -162,19 +365,12 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
             kind = char;
         }
     };
-    if coordinates.len() > 1 {
-        old_sq = coordinates[0].clone();
-        new_sq = coordinates[1].clone();
-    }
-    else {
-        new_sq = coordinates[0].clone();
-    }
     if uppercase_count == 0 {
         kind = 'P';
         if old_sq == ('0','0') {
             old_sq = (new_sq.0,'0');
         }
-    };
+    }
     let kind = match kind {
         'N' => Kind::Knight,
         'K' => Kind::King,
@@ -182,8 +378,113 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
         'R' => Kind::Rook,
         'B' => Kind::Bishop,
         'P' => Kind::Pawn,
+        'O' => Kind::Castle,
          _  => return Err(MoveError::WrongFormat),
     }; 
+    if kind == Kind::Castle {
+        let turn = board.turn.clone();
+        let rook_locations = match board.piece_registry.get(&(Kind::Rook,turn)){
+            Some(i) => i,
+            None => return Err(MoveError::Castling),
+        };
+        let capture = (false,0);
+        let black_king = Square {
+            x:'5'.to_string(),
+            y:'8'.to_string(),
+        };
+        let white_king = Square {
+            x:'5'.to_string(),
+            y:'1'.to_string(),
+        };
+        let king_white_rook = Square {
+            x:'8'.to_string(),
+            y:'1'.to_string(),
+        };
+        let king_black_rook = Square {
+            x:'8'.to_string(),
+            y:'8'.to_string(),
+        };
+        let queen_white_rook = Square {
+            x:'1'.to_string(),
+            y:'1'.to_string(),
+        };
+        let queen_black_rook = Square {
+            x:'1'.to_string(),
+            y:'8'.to_string(),
+        };
+        if uppercase_count == 2 {
+            if board.turn == Color::White {
+                let rook_square = match rook_locations.get(&king_white_rook) {
+                    Some(i) => i.clone(),
+                    None => return Err(MoveError::Castling),
+                };
+                let king_square = match board.piece_registry.get(&(Kind::King,Color::White)).unwrap().get(&white_king) {
+                    Some(i) => ('5','1'),
+                    None => return Err(MoveError::Castling),
+                };
+                return Ok(Move {
+                    capture:capture,
+                    square:rook_square,
+                    kind:kind,
+                    old_mov:king_square,
+                });
+            }else {
+                let rook_square = match rook_locations.get(&king_black_rook) {
+                    Some(i) => i.clone(),
+                    None => return Err(MoveError::Castling),
+                };
+                let king_square = match board.piece_registry.get(&(Kind::King,Color::Black)).unwrap().get(&black_king) {
+                    Some(i) => ('5','8'),
+                    None => return Err(MoveError::Castling),
+                };
+                return Ok(Move {
+                    capture:capture,
+                    square:rook_square,
+                    kind:kind,
+                    old_mov:king_square,
+                });
+            }
+        }else {
+           if board.turn == Color::White {
+                let rook_square = match rook_locations.get(&queen_white_rook) {
+                    Some(i) => i.clone(),
+                    None => return Err(MoveError::Castling),
+                };
+                let king_square = match board.piece_registry.get(&(Kind::King,Color::White)).unwrap().get(&white_king) {
+                    Some(i) => ('5','1'),
+                    None => return Err(MoveError::Castling),
+                };
+                return Ok(Move {
+                    capture:capture,
+                    square:rook_square,
+                    kind:kind,
+                    old_mov:king_square,
+                });
+            }else {
+                let rook_square = match rook_locations.get(&queen_black_rook) {
+                    Some(i) => i.clone(),
+                    None => return Err(MoveError::Castling),
+                };
+                let king_square = match board.piece_registry.get(&(Kind::King,Color::Black)).unwrap().get(&black_king) {
+                    Some(i) => ('5','8'),
+                    None => return Err(MoveError::Castling),
+                };
+                return Ok(Move {
+                    capture:capture,
+                    square:rook_square,
+                    kind:kind,
+                    old_mov:king_square,
+                });
+            } 
+        }
+    };
+    if coordinates.len() > 1 {
+        old_sq = coordinates[0].clone();
+        new_sq = coordinates[1].clone();
+    }
+    else {
+        new_sq = coordinates[0].clone();
+    }
     let new_square = Square {
         x:new_sq.0.to_string(),
         y:new_sq.1.to_string(),

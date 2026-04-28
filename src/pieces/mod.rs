@@ -18,6 +18,7 @@ pub enum Kind {
     Queen,
     King,
     Pawn,
+    Castle,
 }
 
 impl Kind {
@@ -29,6 +30,7 @@ impl Kind {
             Kind::Rook => 5,
             Kind::Queen => 9,
             Kind::King => 10,
+            Kind::Castle => 0,
         }
     }
 }

@@ -6,6 +6,7 @@ pub struct Piece {
     pub kind: Kind,
     pub color: Color,
     pub square: Option<Square>,
+    pub moved: bool,
 }
 
 

@@ -16,9 +16,8 @@ pub struct Board {
     pub turn: Color,
     pub score: HashMap<Color,u32>,
     pub move_count: u32,
+    pub prev_move: Option<(Piece,Square)>,
     pub piece_registry: HashMap<(Kind,Color),HashSet<Square>>,
-    //(king,a file rook, h file rook)
-    pub can_castle: HashMap<Color,(bool,bool,bool)>,
 }
 
 impl Board {
@@ -55,18 +54,16 @@ impl Board {
             (Color::White,39),
             (Color::Black,39),
         ]);
-        let can_castle: HashMap<Color,(bool,bool,bool)> = HashMap::from([
-            (Color::White,(true,true,true)),
-            (Color::Black,(true,true,true)),
-        ]);
+        let prev_move = None;
+
         let count: u32 = 0;
         let mut board = Self {
-            grid: grid,
-            turn: turn,
-            score: score,
+            grid,
+            turn,
+            score,
             move_count: count,
+            prev_move,
             piece_registry: registry,
-            can_castle: can_castle,
         };
         board.clear_board();
         create_initial_pieces(&mut board.grid, &mut board.piece_registry);
@@ -137,6 +134,7 @@ fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>,registry: &mu
                 kind: key.clone(),
                 color: color.clone(),
                 square: Some(square.clone()),
+                moved: false,
             };
             let kind = key.clone();
             let reg_key = (kind,color.clone());

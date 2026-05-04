@@ -6,13 +6,13 @@ use crate::pieces::Kind;
 
 pub fn find_potential_moves(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {
     let potential_moves = match new_move.kind {
-        Kind::Rook => horizontal(false,&new_move, false,board),
-        Kind::Bishop => diagonal(false,&new_move, false,board),
-        Kind::King => combine_movement(true,&new_move,false,board),
-        Kind::Knight => lshape(&new_move,board),
-        Kind::Pawn => combine_movement(true,&new_move,true,board),
-        Kind::Queen => combine_movement(false,&new_move,false,board),
-        Kind::Castle => castle(&new_move,board),
+        Kind::Rook => horizontal(false,new_move, false,board),
+        Kind::Bishop => diagonal(false,new_move, false,board),
+        Kind::King => combine_movement(true,new_move,false,board),
+        Kind::Knight => lshape(new_move,board),
+        Kind::Pawn => combine_movement(true,new_move,true,board),
+        Kind::Queen => combine_movement(false,new_move,false,board),
+        Kind::Castle => castle(new_move,board),
     };
     match potential_moves {
         Ok(i) => return Ok(i),
@@ -157,7 +157,7 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Result<Ve
             }
         }
         all_moves = right || left || down || up;
-        if limit == true {
+        if limit {
             if !pawn {
                 return Ok(moves);
             }
@@ -172,7 +172,7 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board) -> Result<Ve
             }
         }
     }  
-    return Ok(moves);
+    Ok(moves)
 }
 
 fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Result<Vec<Square>,MoveError> {
@@ -381,7 +381,7 @@ fn lshape(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {
                 continue;
             }
     }
-    return Ok(moves);
+    Ok(moves)
 }
 
 fn castle(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {

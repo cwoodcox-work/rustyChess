@@ -2,7 +2,6 @@ use core::fmt;
 use std::collections::HashMap;
 use std::io;
 use crate::board_state::Square;
-use crate::pieces::Piece;
 use crate::pieces::Kind;
 use crate::pieces::Color;
 use crate::pieces::movement::find_potential_moves;
@@ -45,7 +44,7 @@ pub fn take_input() -> String {
         .read_line(&mut user_move)
         .expect("Failed to read line");
 
-    return user_move.trim().to_string();
+    user_move.trim().to_string()
 
 }
 
@@ -54,6 +53,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         Ok(mov) => mov,
         Err(error) => return Err(error),
     };
+    
     let castle = new_move.kind.clone() == Kind::Castle;
         
     let potential_moves = match find_potential_moves(&new_move,&board) {
@@ -109,10 +109,11 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                 piece_list.remove(&new_move.square);
             }
         }
-        let piece_moving = match board.grid.get(&og_square).unwrap() {
+        let mut piece_moving = match board.grid.get_mut(&og_square).unwrap() {
             Some(i) => i.clone(),
             None => panic!("this should never happen"),
         };
+        piece_moving.moved = true;
         board.grid.insert(og_square,None);
         board.grid.insert(new_move.square,Some(piece_moving));
         board.turn = match board.turn {
@@ -120,7 +121,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
             Color::White => Color::Black,
         };
         board.move_count += 1;
-        return Ok(());
+        Ok(())
     }  
     else if castle {
         let king_space = potential_moves[0].clone();
@@ -152,18 +153,20 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     rook_list.insert(queen_side_rook.clone());
                 }       
                 {                   
-                    let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                    let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
                         Some(i) => i.clone(),
                         None => panic!("this should never happen"),
                     };
+                    piece_moving.moved = true;
                     board.grid.insert(rook_space.clone(),None);
                     board.grid.insert(queen_side_rook,Some(piece_moving));
                 }
                 {
-                   let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                   let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
                         Some(i) => i.clone(),
                         None => panic!("this should never happen"),
                     };
+                    piece_moving.moved = true;
                     board.grid.insert(king_space,None);
                     board.grid.insert(queen_side_king,Some(piece_moving)); 
                 }
@@ -172,7 +175,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     Color::White => Color::Black,
                 };
                 board.move_count += 1;
-                return Ok(());
+                Ok(())
             }
             else {
                 let king_side_rook = Square {
@@ -200,15 +203,16 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     rook_list.insert(king_side_rook.clone());
                 }        
                 {                   
-                    let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                    let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
                         Some(i) => i.clone(),
                         None => panic!("this should never happen"),
                     };
+                    piece_moving.moved = true;
                     board.grid.insert(rook_space.clone(),None);
                     board.grid.insert(king_side_rook,Some(piece_moving));
                 }
                 {
-                   let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                   let piece_moving = match board.grid.get(&king_space).unwrap() {
                         Some(i) => i.clone(),
                         None => panic!("this should never happen"),
                     };
@@ -220,7 +224,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     Color::White => Color::Black,
                 };
                 board.move_count += 1;
-                return Ok(());
+                Ok(())
             }            
         } 
         else {
@@ -250,10 +254,11 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     rook_list.insert(queen_side_rook.clone());
                 }        
                 {                   
-                    let piece_moving = match board.grid.get(&rook_space).unwrap() {
+                    let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
                         Some(i) => i.clone(),
                         None => panic!("this should never happen"),
                     };
+                    piece_moving.moved = true;
                     board.grid.insert(rook_space.clone(),None);
                     board.grid.insert(queen_side_rook,Some(piece_moving));
                 }
@@ -270,7 +275,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     Color::White => Color::Black,
                 };
                 board.move_count += 1;
-                return Ok(());
+                Ok(())
             }
             else {
                 let king_side_rook = Square {
@@ -318,12 +323,12 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     Color::White => Color::Black,
                 };
                 board.move_count += 1;
-                return Ok(());
+                Ok(())
             } 
         }
     }
     else {
-        return Err(MoveError::NoPieceToMove);
+        Err(MoveError::NoPieceToMove)
     }
 
 }
@@ -418,72 +423,127 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
                     Some(i) => i.clone(),
                     None => return Err(MoveError::Castling),
                 };
+
                 let king_square = match board.piece_registry.get(&(Kind::King,Color::White)).unwrap().get(&white_king) {
-                    Some(i) => ('5','1'),
+                    Some(i) => i,
                     None => return Err(MoveError::Castling),
                 };
-                return Ok(Move {
-                    capture:capture,
-                    square:rook_square,
-                    kind:kind,
-                    old_mov:king_square,
-                });
+
+                let moved_rook = match board.grid.get(&rook_square).unwrap() {
+                    Some(i) => i.moved,
+                    None => return Err(MoveError::Castling),
+                };
+
+                let moved_king = match board.grid.get(king_square).unwrap() {
+                    Some(i) => i.moved,
+                    None => return Err(MoveError::Castling),
+                };
+                if moved_king && moved_rook {
+                    return Ok(Move {
+                        capture:capture,
+                        square:rook_square,
+                        kind:kind,
+                        old_mov:('5','1'),
+                    });
+                }else {
+                    return Err(MoveError::Castling)
+                }
             }else {
                 let rook_square = match rook_locations.get(&king_black_rook) {
                     Some(i) => i.clone(),
                     None => return Err(MoveError::Castling),
                 };
                 let king_square = match board.piece_registry.get(&(Kind::King,Color::Black)).unwrap().get(&black_king) {
-                    Some(i) => ('5','8'),
+                    Some(i) => i.clone(),
                     None => return Err(MoveError::Castling),
                 };
-                return Ok(Move {
-                    capture:capture,
-                    square:rook_square,
-                    kind:kind,
-                    old_mov:king_square,
-                });
+                
+                let moved_rook = match board.grid.get(&rook_square).unwrap() {
+                    Some(i) => i.moved,
+                    None => return Err(MoveError::Castling),
+                };
+
+                let moved_king = match board.grid.get(&king_square).unwrap() {
+                    Some(i) => i.moved,
+                    None => return Err(MoveError::Castling),
+                };
+                if moved_king && moved_rook {
+                    return Ok(Move {
+                        capture:capture,
+                        square:rook_square,
+                        kind:kind,
+                        old_mov:('5','8'),
+                    });
+                }   
+                else {
+                    return Err(MoveError::Castling)
+                }
             }
-        }else {
+        } else {
            if board.turn == Color::White {
                 let rook_square = match rook_locations.get(&queen_white_rook) {
                     Some(i) => i.clone(),
                     None => return Err(MoveError::Castling),
                 };
                 let king_square = match board.piece_registry.get(&(Kind::King,Color::White)).unwrap().get(&white_king) {
-                    Some(i) => ('5','1'),
+                    Some(i) => i.clone(),
                     None => return Err(MoveError::Castling),
                 };
-                return Ok(Move {
-                    capture:capture,
-                    square:rook_square,
-                    kind:kind,
-                    old_mov:king_square,
-                });
+
+                let moved_rook = match board.grid.get(&rook_square).unwrap() {
+                    Some(i) => i.moved,
+                    None => return Err(MoveError::Castling),
+                };
+
+                let moved_king = match board.grid.get(&king_square).unwrap() {
+                    Some(i) => i.moved,
+                    None => return Err(MoveError::Castling),
+                };
+                if moved_king && moved_rook {
+                    return Ok(Move {
+                        capture:capture,
+                        square:rook_square,
+                        kind:kind,
+                        old_mov:('5','1'),
+                    });
+                }
             }else {
                 let rook_square = match rook_locations.get(&queen_black_rook) {
                     Some(i) => i.clone(),
                     None => return Err(MoveError::Castling),
                 };
                 let king_square = match board.piece_registry.get(&(Kind::King,Color::Black)).unwrap().get(&black_king) {
-                    Some(i) => ('5','8'),
+                    Some(i) => i.clone(),
                     None => return Err(MoveError::Castling),
                 };
-                return Ok(Move {
-                    capture:capture,
-                    square:rook_square,
-                    kind:kind,
-                    old_mov:king_square,
-                });
+
+                let moved_rook = match board.grid.get(&rook_square).unwrap() {
+                    Some(i) => i.moved,
+                    None => return Err(MoveError::Castling),
+                };
+
+                let moved_king = match board.grid.get(&king_square).unwrap() {
+                    Some(i) => i.moved,
+                    None => return Err(MoveError::Castling),
+                };
+               
+                if moved_king && moved_rook {
+                    return Ok(Move {
+                        capture:capture,
+                        square:rook_square,
+                        kind:kind,
+                        old_mov:('5','8'),
+                    });
+                }
             } 
         }
-    };
+    }
     if coordinates.len() > 1 {
-        old_sq = coordinates[0].clone();
-        new_sq = coordinates[1].clone();
+        old_sq = coordinates[0];
+        new_sq = coordinates[1];
     }
     else {
-        new_sq = coordinates[0].clone();
+        new_sq = coordinates[0];
     }
     let new_square = Square {
         x:new_sq.0.to_string(),
@@ -499,7 +559,7 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
 
         None => (false,0), 
     };
-    return Ok(Move {
+    Ok(Move {
         capture: capture,
         square: new_square,
         kind: kind,

@@ -23,6 +23,7 @@ pub enum MoveError {
     NoPieceToMove,
     WrongFormat,
     Castling,
+    Pawned,
 }
 
 impl fmt::Display for MoveError {
@@ -33,6 +34,7 @@ impl fmt::Display for MoveError {
             MoveError::OccupiedSameColor => write!(f, "The square given is already occupied by your own piece. "),
             MoveError::WrongFormat => write!(f, "Whatever you entered, doesn't seem to be in the correct format. "),
             MoveError::Castling => write!(f, "Cannot castle"),
+            MoveError::Pawned => write!(f, "Pawn was already moved. It can only move one space"),
         }
     }
 }
@@ -55,8 +57,9 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
     };
     
     let castle = new_move.kind.clone() == Kind::Castle;
+    let pawn = new_move.kind.clone() == Kind::Pawn;
         
-    let potential_moves = match find_potential_moves(&new_move,&board) {
+    let potential_moves = match find_potential_moves(&new_move,board) {
         Ok(list) => list,
         Err(m) => return Err(m),
     };
@@ -81,6 +84,18 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
     if potential_moves.len() == 1 || loo {
         let points = new_move.capture;
         let mut og_square = Square {x:potential_moves[0].x.clone(),y:potential_moves[0].y.clone()};
+        {
+        let mut piece_moving = match board.grid.get_mut(&og_square).unwrap() {
+            Some(i) => i.clone(),
+            None => panic!("this should never happen"),
+        };
+        if pawn && piece_moving.moved == true {
+            let distance_moved:u32 = og_square.y.parse::<i32>().unwrap().abs_diff(new_move.square.y.parse::<i32>().unwrap()); 
+            if distance_moved == 2 {
+                return Err(MoveError::Pawned)
+            } 
+        }
+        }
         if loo {
             og_square = fin_move;
         } 
@@ -114,6 +129,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
             None => panic!("this should never happen"),
         };
         piece_moving.moved = true;
+        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
         board.grid.insert(og_square,None);
         board.grid.insert(new_move.square,Some(piece_moving));
         board.turn = match board.turn {
@@ -440,9 +456,9 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
                 };
                 if moved_king && moved_rook {
                     return Ok(Move {
-                        capture:capture,
+                        capture,
                         square:rook_square,
-                        kind:kind,
+                        kind,
                         old_mov:('5','1'),
                     });
                 }else {
@@ -469,9 +485,9 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
                 };
                 if moved_king && moved_rook {
                     return Ok(Move {
-                        capture:capture,
+                        capture,
                         square:rook_square,
-                        kind:kind,
+                        kind,
                         old_mov:('5','8'),
                     });
                 }   
@@ -501,9 +517,9 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
                 };
                 if moved_king && moved_rook {
                     return Ok(Move {
-                        capture:capture,
+                        capture,
                         square:rook_square,
-                        kind:kind,
+                        kind,
                         old_mov:('5','1'),
                     });
                 }
@@ -529,9 +545,9 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
                
                 if moved_king && moved_rook {
                     return Ok(Move {
-                        capture:capture,
+                        capture,
                         square:rook_square,
-                        kind:kind,
+                        kind,
                         old_mov:('5','8'),
                     });
                 }
@@ -560,9 +576,9 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
         None => (false,0), 
     };
     Ok(Move {
-        capture: capture,
+        capture,
         square: new_square,
-        kind: kind,
+        kind,
         old_mov: old_sq,
     })
      

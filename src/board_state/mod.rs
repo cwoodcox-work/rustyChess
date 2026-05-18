@@ -16,7 +16,7 @@ pub struct Board {
     pub turn: Color,
     pub score: HashMap<Color,u32>,
     pub move_count: u32,
-    pub prev_move: Option<(Piece,Square)>,
+    pub prev_move: Option<(Piece,Square,bool)>,
     pub piece_registry: HashMap<(Kind,Color),HashSet<Square>>,
 }
 
@@ -67,33 +67,38 @@ impl Board {
         };
         board.clear_board();
         create_initial_pieces(&mut board.grid, &mut board.piece_registry);
-        return board 
+        board 
                
     }
 
     pub fn print_board(&self) {
-        for y in (1..=8).rev() {
+        for y in (0..=8).rev() {
             let mut row = String::new();
+            row.push_str(&y.to_string()[..]);
             for x in 1..=8 {
-                let square = Square {
-                    x:x.to_string(),
-                    y:y.to_string(),
-                };
-                let mut piece_string: &str = " ";
-                if let Some(i) = self.grid.get(&square).unwrap() {
-                    let piece = i;
-                    piece_string = match piece.kind {
-                    Kind::Rook => "R",
-                    Kind::Knight => "N",
-                    Kind::Bishop => "B",
-                    Kind::Queen => "Q",
-                    Kind::King => "K",
-                    Kind::Pawn => "P",
-                    Kind::Castle => "O",
+                if y != 0i32 {
+                    let square = Square {
+                        x:x.to_string(),
+                        y:y.to_string(),
                     };
-
+                    let mut piece_string: &str = " ";
+                    if let Some(i) = self.grid.get(&square).unwrap() {
+                        let piece = i;
+                        piece_string = match piece.kind {
+                        Kind::Rook => "R",
+                        Kind::Knight => "N",
+                        Kind::Bishop => "B",
+                        Kind::Queen => "Q",
+                        Kind::King => "K",
+                        Kind::Pawn => "P",
+                        Kind::Castle => "O",
+                        };
+                    }
+                    row.push_str(piece_string);
                 }
-                row.push_str(piece_string);
+                else {
+                    row.push_str(&x.to_string()[..])
+                }
             }
             println!("{row}");
         }

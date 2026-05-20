@@ -120,7 +120,10 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &mut Board) -> Resul
                         }
                     }
                 }
-                else if pawn && new_move.old_mov.0.to_digit(10).unwrap() != new_move.square.x.parse::<u32>().unwrap() && !new_move.capture.0 {
+                else if pawn && new_move.old_mov.0 != '0'  && !new_move.capture.0 {
+                    dbg!(pawn);
+                    dbg!(new_move.old_mov);
+                    dbg!(new_move.capture);
                     let check_prev = match board.prev_move.as_ref() {
                         Some(i) => i,
                         None => panic!("something bad happened"),
@@ -393,7 +396,7 @@ fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &mut Board) 
     };
     let prev = match board.prev_move.as_ref() {
         Some(i) => i.2,
-        None => panic!("something bad happened"),
+        None => false, 
     };
     if !pawn || prev {
         diagonal.append(&mut horizontal);

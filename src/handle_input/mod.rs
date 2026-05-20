@@ -24,6 +24,7 @@ pub enum MoveError {
     WrongFormat,
     Castling,
     Pawned,
+    Check,
 }
 
 impl fmt::Display for MoveError {
@@ -35,6 +36,7 @@ impl fmt::Display for MoveError {
             MoveError::WrongFormat => write!(f, "Whatever you entered, doesn't seem to be in the correct format. "),
             MoveError::Castling => write!(f, "Cannot castle"),
             MoveError::Pawned => write!(f, "Pawn was already moved. It can only move one space"),
+            MoveError::Check => write!(f, "You are in check. Move is illegal"),
         }
     }
 }
@@ -460,9 +462,6 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
     };
     if uppercase_count == 0 {
         kind = 'P';
-        if old_sq == ('0','0') {
-            old_sq = (new_sq.0,'0');
-        }
     }
     let kind = match kind {
         'N' => Kind::Knight,
@@ -632,6 +631,9 @@ fn translate_input(input: String,board: &Board)  -> Result<Move,MoveError> {
     }
     else {
         new_sq = coordinates[0];
+    }
+    if old_sq == ('0','0') {
+        old_sq = (new_sq.0,'0')
     }
     let new_square = Square {
         x:new_sq.0.to_string(),

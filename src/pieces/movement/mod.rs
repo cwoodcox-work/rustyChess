@@ -4,14 +4,14 @@ use crate::handle_input::Move;
 use crate::handle_input::MoveError;
 use crate::pieces::Kind;
 
-pub fn find_potential_moves(new_move: &Move,board: &mut Board) -> Result<Vec<Square>,MoveError> {
+pub fn find_potential_moves(new_move: &Move,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
     let potential_moves = match new_move.kind {
-        Kind::Rook => horizontal(false,new_move, false,board),
-        Kind::Bishop => diagonal(false,new_move, false,board),
-        Kind::King => combine_movement(true,new_move,false,board),
-        Kind::Knight => lshape(new_move,board),
-        Kind::Pawn => combine_movement(true,new_move,true,board),
-        Kind::Queen => combine_movement(false,new_move,false,board),
+        Kind::Rook => horizontal(false,new_move, false,board,checker),
+        Kind::Bishop => diagonal(false,new_move, false,board,checker),
+        Kind::King => combine_movement(true,new_move,false,board,checker),
+        Kind::Knight => lshape(new_move,board,checker),
+        Kind::Pawn => combine_movement(true,new_move,true,board,checker),
+        Kind::Queen => combine_movement(false,new_move,false,board,checker),
         Kind::Castle => castle(new_move,board),
     };
     match potential_moves {
@@ -20,7 +20,7 @@ pub fn find_potential_moves(new_move: &Move,board: &mut Board) -> Result<Vec<Squ
     };
 }
 
-fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &mut Board) -> Result<Vec<Square>,MoveError> {
+fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
     let x: u32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
     let y: u32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
     let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),board.turn.clone())) {
@@ -121,19 +121,13 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &mut Board) -> Resul
                     }
                 }
                 else if pawn && new_move.old_mov.0 != '0'  && !new_move.capture.0 {
-                    dbg!(pawn);
-                    dbg!(new_move.old_mov);
-                    dbg!(new_move.capture);
                     let check_prev = match board.prev_move.as_ref() {
                         Some(i) => i,
                         None => panic!("something bad happened"),
                     };
  
                     let test1 = check_prev.0.kind == Kind::Pawn;
-                    let prev_square = match check_prev.0.square.as_ref() {
-                        Some(i) => i,
-                        None => panic!("working code is best"),
-                    };
+                    let prev_square = check_prev.0.square.clone(); 
 
                     let y_value = match prev_square.y.parse::<i32>() {
                         Ok(t) => t,
@@ -146,6 +140,7 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &mut Board) -> Resul
                     let test2 = y_value.abs_diff(x_value) == 2 && check_prev.1 == potential_square;
                     if test1 && test2 {
                         en_passant == true;
+                        moves.push(Square {x:"en_passant".to_string(),y:"".to_string()});
                         moves.push(potential_square);
                     }
                 }
@@ -186,10 +181,7 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &mut Board) -> Resul
                     };
  
                     let test1 = check_prev.0.kind == Kind::Pawn;
-                    let prev_square = match check_prev.0.square.as_ref() {
-                        Some(i) => i,
-                        None => panic!("working code is best"),
-                    };
+                    let prev_square = check_prev.0.square.clone(); 
 
                     let y_value = match prev_square.y.parse::<i32>() {
                         Ok(t) => t,
@@ -202,7 +194,8 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &mut Board) -> Resul
                     let test2 = y_value.abs_diff(x_value) == 2 && check_prev.1 == potential_square;
                     if test1 && test2 {
                         en_passant == true;
-                        moves.push(potential_square)
+                        moves.push(Square {x:"en_passant".to_string(),y:"".to_string() });
+                        moves.push(potential_square);
                     }
                 }
                 else {
@@ -226,13 +219,6 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &mut Board) -> Resul
                     continue;
                 }
                 else {
-                    if en_passant {
-                        let check_prev = match board.prev_move.as_mut() {
-                            Some(i) => i,
-                            None => panic!("something bad happened"),
-                        };
-                        check_prev.2 = true;
-                    }
                     return Ok(moves);
                 }
             }
@@ -241,7 +227,7 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &mut Board) -> Resul
     Ok(moves)
 }
 
-fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Result<Vec<Square>,MoveError> {
+fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
     let mut moves: Vec<Square> = Vec::new();
     let x: i32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
     let y: i32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
@@ -385,12 +371,12 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board) -> Result<Ve
     return Ok(moves);
 }
 
-fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &mut Board) -> Result<Vec<Square>,MoveError> {
-    let mut horizontal = match horizontal(limit,&new_move,pawn,board) {
+fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
+    let mut horizontal = match horizontal(limit,&new_move,pawn,board,false) {
         Ok(list) => list,
         Err(m) => return Err(m),
     };
-    let mut diagonal = match diagonal(limit,&new_move,pawn,board) {
+    let mut diagonal = match diagonal(limit,&new_move,pawn,board,false) {
         Ok(list) => list,
         Err(m) => return Err(m),
     };
@@ -410,7 +396,7 @@ fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &mut Board) 
     }
 }
 
-fn lshape(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {
+fn lshape(new_move: &Move,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
     let mut moves: Vec<Square> = Vec::new();
     let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),board.turn.clone())) {
         Some(i) => i,

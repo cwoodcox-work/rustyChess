@@ -18,6 +18,7 @@ pub struct Board {
     pub move_count: u32,
     pub prev_move: Option<(Piece,Square,bool)>,
     pub piece_registry: HashMap<(Kind,Color),HashSet<Square>>,
+    pub check:Option<Color>,
 }
 
 impl Board {
@@ -57,6 +58,7 @@ impl Board {
         let prev_move = None;
 
         let count: u32 = 0;
+        let check = None;
         let mut board = Self {
             grid,
             turn,
@@ -64,6 +66,7 @@ impl Board {
             move_count: count,
             prev_move,
             piece_registry: registry,
+            check,
         };
         board.clear_board();
         create_initial_pieces(&mut board.grid, &mut board.piece_registry);
@@ -138,7 +141,7 @@ fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>,registry: &mu
             let piece: Piece = Piece {
                 kind: key.clone(),
                 color: color.clone(),
-                square: Some(square.clone()),
+                square: square.clone(),
                 moved: false,
             };
             let kind = key.clone();

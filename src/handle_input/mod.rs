@@ -16,6 +16,7 @@ pub struct Move {
     //old_mov holds the potential coordinates of where the piece is coming from. coordinates are 0 if unknown
     pub old_mov: (char,char),
 }
+
 #[derive(Debug)]
 pub enum MoveError {
     AmbiguousMove,
@@ -52,6 +53,22 @@ pub fn take_input() -> String {
 
 }
 
+fn check_checker(board: &Board) { 
+    let square = board.piece_registry.get(&(Kind::King,board.turn)).unwrap().iter().next().unwrap().clone(); 
+    for (key,value) in board.grid.iter() {
+        let piece = match value {
+            Some(t) => if t.color == board.turn { continue }
+                else { t.clone() },
+            None => continue,
+        };
+        let check_move = Move { capture: (false,0), square:square.clone(), kind:piece.kind, old_mov: ('0','0'), };
+        let check_or_no = match find_potential_moves(&check_move,&board,true) {
+            Ok(mov) => true,
+            Err(error) => false, 
+        };
+    }
+}
+
 pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> {
     let new_move = match translate_input(input,board) {
         Ok(mov) => mov,
@@ -61,7 +78,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
     let castle = new_move.kind.clone() == Kind::Castle;
     let pawn = new_move.kind.clone() == Kind::Pawn;
         
-    let potential_moves = match find_potential_moves(&new_move,board) {
+    let potential_moves = match find_potential_moves(&new_move,board,false) {
         Ok(list) => list,
         Err(m) => return Err(m),
     };
@@ -113,8 +130,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         piece_moving.moved = true;
         board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
         board.grid.insert(original_square,None);
-        piece_moving.square = Some(new_move.square.clone());
-        board.grid.insert(new_move.square,Some(piece_moving));
+        piece_moving.square = new_move.square.clone();
+        board.grid.insert(new_move.square,Some(piece_moving.clone()));
         board.turn = match board.turn {
             Color::Black => Color::White,
             Color::White => Color::Black,
@@ -196,8 +213,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         piece_moving.moved = true;
         board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
         board.grid.insert(og_square,None);
-        piece_moving.square = Some(new_move.square.clone());
-        board.grid.insert(new_move.square,Some(piece_moving));
+        piece_moving.square = new_move.square.clone();
+        board.grid.insert(new_move.square,Some(piece_moving.clone()));
         board.turn = match board.turn {
             Color::Black => Color::White,
             Color::White => Color::Black,
@@ -241,8 +258,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     };
                     piece_moving.moved = true;
                     board.grid.insert(rook_space.clone(),None);
-                    piece_moving.square = Some(queen_side_rook.clone());
-                    board.grid.insert(queen_side_rook,Some(piece_moving));
+                    piece_moving.square = queen_side_rook.clone();
+                    board.grid.insert(queen_side_rook,Some(piece_moving.clone()));
                 }
                 {
                    let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
@@ -251,8 +268,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     };
                     piece_moving.moved = true;
                     board.grid.insert(king_space,None);
-                    piece_moving.square = Some(queen_side_king.clone());
-                    board.grid.insert(queen_side_king,Some(piece_moving)); 
+                    piece_moving.square = queen_side_king.clone();
+                    board.grid.insert(queen_side_king,Some(piece_moving.clone())); 
                 }
                 board.turn = match board.turn {
                     Color::Black => Color::White,
@@ -293,8 +310,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     };
                     piece_moving.moved = true;
                     board.grid.insert(rook_space.clone(),None);
-                    piece_moving.square = Some(king_side_rook.clone());
-                    board.grid.insert(king_side_rook,Some(piece_moving));
+                    piece_moving.square = king_side_rook.clone();
+                    board.grid.insert(king_side_rook,Some(piece_moving.clone()));
                 }
                 {
                    let mut piece_moving = match board.grid.get(&king_space).unwrap() {
@@ -302,8 +319,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                         None => panic!("this should never happen"),
                     };
                     board.grid.insert(king_space,None);
-                    piece_moving.square = Some(king_side_king.clone());
-                    board.grid.insert(king_side_king,Some(piece_moving)); 
+                    piece_moving.square = king_side_king.clone();
+                    board.grid.insert(king_side_king,Some(piece_moving.clone())); 
                 }
                 board.turn = match board.turn {
                     Color::Black => Color::White,
@@ -346,8 +363,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     };
                     piece_moving.moved = true;
                     board.grid.insert(rook_space.clone(),None);
-                    piece_moving.square = Some(queen_side_rook.clone());
-                    board.grid.insert(queen_side_rook,Some(piece_moving));
+                    piece_moving.square = queen_side_rook.clone();
+                    board.grid.insert(queen_side_rook,Some(piece_moving.clone()));
                 }
                 {
                    let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
@@ -355,8 +372,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                         None => panic!("this should never happen"),
                     };
                     board.grid.insert(king_space,None);
-                    piece_moving.square = Some(queen_side_king.clone());
-                    board.grid.insert(queen_side_king,Some(piece_moving)); 
+                    piece_moving.square = queen_side_king.clone();
+                    board.grid.insert(queen_side_king,Some(piece_moving.clone())); 
                 }
                 board.turn = match board.turn {
                     Color::Black => Color::White,
@@ -391,13 +408,13 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     rook_list.insert(king_side_rook.clone());
                 }
                 {                           
-                    let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
+                    let mut piece_moving = match board.grid.get_mut(&rook_space).unwrap() {
                         Some(i) => i.clone(),
                         None => panic!("this should never happen"),
                     };
                     board.grid.insert(rook_space.clone(),None);
-                    piece_moving.square = Some(king_side_rook.clone());
-                    board.grid.insert(king_side_rook,Some(piece_moving));
+                    piece_moving.square = king_side_rook.clone();
+                    board.grid.insert(king_side_rook,Some(piece_moving.clone()));
                 }
                 {
                     let mut piece_moving = match board.grid.get(&king_space).unwrap() {
@@ -405,8 +422,8 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                         None => panic!("this should never happen"),
                     };
                     board.grid.insert(king_space,None);
-                    piece_moving.square = Some(king_side_king.clone());
-                    board.grid.insert(king_side_king,Some(piece_moving));
+                    piece_moving.square = king_side_king.clone();
+                    board.grid.insert(king_side_king,Some(piece_moving.clone()));
                 }
                 board.turn = match board.turn {
                     Color::Black => Color::White,

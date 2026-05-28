@@ -53,7 +53,8 @@ pub fn take_input() -> String {
 
 }
 
-fn check_checker(board: &Board) { 
+//might make this into a method for board later. seems fitting 
+fn check_checker(board: &Board) -> Result<(),MoveError> { 
     let square = board.piece_registry.get(&(Kind::King,board.turn)).unwrap().iter().next().unwrap().clone(); 
     for (key,value) in board.grid.iter() {
         let piece = match value {
@@ -61,12 +62,24 @@ fn check_checker(board: &Board) {
                 else { t.clone() },
             None => continue,
         };
-        let check_move = Move { capture: (false,0), square:square.clone(), kind:piece.kind, old_mov: ('0','0'), };
-        let check_or_no = match find_potential_moves(&check_move,&board,true) {
-            Ok(mov) => true,
-            Err(error) => false, 
+        //im going to use the old_mov tuple to track the color of the piece we are checking. x=1
+        //will be white. y=1 will be black.
+        let kolor = match board.turn {
+            Color::White => ('0','1'),
+            Color::Black => ('1','0'),
         };
+        let check_move = Move { capture: (false,0), square:square.clone(), kind:piece.kind, old_mov: kolor, };
+        let check_or_no = match find_potential_moves(&check_move,&board,true) {
+            Ok(mov) => mov,
+            Err(error) => return Err(error), 
+        };
+        if check_or_no.is_empty() {
+            continue;
+        } else { 
+            return Err(MoveError::Check);
+        }
     }
+    Ok(())
 }
 
 pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> {

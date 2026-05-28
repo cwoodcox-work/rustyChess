@@ -3,6 +3,7 @@ use crate::board_state::Square;
 use crate::handle_input::Move;
 use crate::handle_input::MoveError;
 use crate::pieces::Kind;
+use crate::pieces::Color;
 
 pub fn find_potential_moves(new_move: &Move,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
     let potential_moves = match new_move.kind {
@@ -23,7 +24,11 @@ pub fn find_potential_moves(new_move: &Move,board: &Board,checker: bool) -> Resu
 fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
     let x: u32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
     let y: u32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
-    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),board.turn.clone())) {
+    let color = if checker {
+            if new_move.old_mov == ('0','1') { Color::Black } 
+            else { Color::White }}
+        else { board.turn };
+    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),color)) {
         Some(i) => i,
         None => return Err(MoveError::NoPieceToMove),
     };
@@ -231,7 +236,11 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
     let mut moves: Vec<Square> = Vec::new();
     let x: i32 = new_move.square.x.clone().parse().expect("Failed to parse integer");
     let y: i32 = new_move.square.y.clone().parse().expect("Failed to parse integer");
-    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),board.turn.clone())) {
+    let color = if checker {
+            if new_move.old_mov == ('0','1') { Color::Black } 
+            else { Color::White }}
+        else { board.turn };
+    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),color)) {
         Some(i) => i,
         None => return Err(MoveError::NoPieceToMove),
     };
@@ -368,7 +377,7 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
         all_moves = right || left || down || up;
 
     }
-    return Ok(moves);
+    Ok(moves)
 }
 
 fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
@@ -398,7 +407,11 @@ fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board,check
 
 fn lshape(new_move: &Move,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
     let mut moves: Vec<Square> = Vec::new();
-    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),board.turn.clone())) {
+    let color = if checker {
+            if new_move.old_mov == ('0','1') { Color::Black } 
+            else { Color::White }}
+        else { board.turn };
+    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),color)) {
         Some(i) => i,
         None => return Err(MoveError::NoPieceToMove),
     };

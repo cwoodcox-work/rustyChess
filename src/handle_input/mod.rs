@@ -194,18 +194,48 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
             Some(i) => i.clone(),
             None => panic!("this should never happen"),
         };
-        if pawn && piece_moving.moved == true {
+        if pawn && piece_moving.moved {
             let distance_moved:u32 = og_square.y.parse::<i32>().unwrap().abs_diff(new_move.square.y.parse::<i32>().unwrap()); 
             if distance_moved == 2 {
                 return Err(MoveError::Pawned)
             } 
         }
         }
+
         if loo {
             og_square = fin_move;
         } 
+
+        let mut piece_moving = match board.grid.get_mut(&og_square).unwrap() {
+            Some(i) => i.clone(),
+            None => panic!("this should never happen"),
+        };
+
+        let temp_prev_move = board.prev_move.clone();
+        let temp_piece_moving = piece_moving.clone();
+        let temp_new_move = new_move.clone();
+        let temp_original_square = og_square.clone();
+
+        piece_moving.moved = true;
+        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
+        board.grid.insert(og_square.clone(),None);
+        piece_moving.square = new_move.square.clone();
+        board.grid.insert(new_move.square.clone(),Some(piece_moving.clone()));
+        let check = match check_checker(board) {
+            Ok(()) => false,
+            Err(MoveError::Check) => true,
+            Err(err) => return Err(err),
+        };
+
+        if check {
+            board.prev_move = temp_prev_move;
+            board.grid.insert(temp_original_square,Some(temp_piece_moving.clone()));
+            board.grid.insert(temp_new_move.square,None);
+            return Err(MoveError::Check)
+        }
+
         {
-            let piece_list = match board.piece_registry.get_mut(&(new_move.kind.clone(),board.turn.clone())) {
+            let piece_list = match board.piece_registry.get_mut(&(new_move.kind.clone(),board.turn)) {
                 Some(i) => i,
                 None => return Err(MoveError::NoPieceToMove),
             };
@@ -223,7 +253,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                 None => panic!("Shouldn't happen"),
             };                
             let old_kind = match board.grid.get(&new_move.square).unwrap() {
-                    Some(i) => (i.kind.clone(),i.color.clone()),
+                    Some(i) => (i.kind.clone(),i.color),
                     None => panic!("this should never happend since we know this is a capture"),
             };
             {
@@ -234,15 +264,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                 piece_list.remove(&new_move.square);
             }
         }
-        let mut piece_moving = match board.grid.get_mut(&og_square).unwrap() {
-            Some(i) => i.clone(),
-            None => panic!("this should never happen"),
-        };
-        piece_moving.moved = true;
-        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
-        board.grid.insert(og_square,None);
-        piece_moving.square = new_move.square.clone();
-        board.grid.insert(new_move.square,Some(piece_moving.clone()));
+
         board.turn = match board.turn {
             Color::Black => Color::White,
             Color::White => Color::Black,
@@ -251,9 +273,12 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         Ok(())
     }  
     else if castle {
+        //need to check for check twice. at the beginning of the turn and at the end. they cant
+        //castle out of check and they can't castle into check. they also cant castle through check
+        //but that will be last and need some thinking through. 
         let king_space = potential_moves[0].clone();
         let rook_space = potential_moves[1].clone();
-        if board.turn.clone() == Color::White {
+        if board.turn == Color::White {
             if rook_space.x == '1'.to_string() {
                 let queen_side_rook = Square {
                     x:'4'.to_string(),

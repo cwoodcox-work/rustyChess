@@ -102,12 +102,41 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
     };
 
     if en_passant {
-        let captured_pawn = match board.prev_move.as_mut() {
+        let captured_pawn = match board.prev_move.clone() {
             Some(t) => t,
             None => return Err(MoveError::Pawned),
         };
         let original_square = Square { x:new_move.old_mov.0.to_string().clone(), y:captured_pawn.1.y.clone()};
 
+        let mut piece_moving = match board.grid.get_mut(&original_square).unwrap() {
+            Some(i) => i.clone(),
+            None => panic!("this should never happen"),
+        };
+
+        let temp_prev_move = board.prev_move.clone();
+        let temp_piece_moving = piece_moving.clone();
+        let temp_new_move = new_move.clone();
+        let temp_original_square = original_square.clone();
+ 
+        piece_moving.moved = true;
+        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
+        board.grid.insert(original_square.clone(),None);
+        piece_moving.square = new_move.square.clone();
+        board.grid.insert(new_move.square.clone(),Some(piece_moving.clone()));
+        let check = match check_checker(board) {
+            Ok(()) => false,
+            Err(MoveError::Check) => true,
+            Err(err) => return Err(err),
+        };
+        //reversing everything that was updated on the board since it was an illegal move ending the
+        //turn in check. need to make sure to fix the piece registry as well.
+        if check {
+            board.prev_move = temp_prev_move;
+            board.grid.insert(temp_original_square,Some(temp_piece_moving.clone()));
+            board.grid.insert(temp_new_move.square,None);
+            return Err(MoveError::Check)
+        }
+ 
         {
             let piece_list = match board.piece_registry.get_mut(&(new_move.kind.clone(),board.turn.clone())) {
                 Some(i) => i,
@@ -125,30 +154,16 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
             piece_list.remove(&captured_pawn.1);
         }
  
-        let mut piece_moving = match board.grid.get_mut(&original_square).unwrap() {
-            Some(i) => i.clone(),
-            None => panic!("this should never happen"),
-        };
- 
-        let temp_turn = match board.turn {
-            Color::White => Color::Black,
-            Color::Black => Color::White,
-        };
-
-        match board.score.get_mut(&temp_turn) {
-            Some(i) => *i -= 1,
-            None => panic!("Shouldn't happen"),
-        };                
- 
-        piece_moving.moved = true;
-        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
-        board.grid.insert(original_square,None);
-        piece_moving.square = new_move.square.clone();
-        board.grid.insert(new_move.square,Some(piece_moving.clone()));
         board.turn = match board.turn {
             Color::Black => Color::White,
             Color::White => Color::Black,
         };
+
+        match board.score.get_mut(&board.turn) {
+            Some(i) => *i -= 1,
+            None => panic!("Shouldn't happen"),
+        };                
+
         board.move_count += 1;
         return Ok(())
  

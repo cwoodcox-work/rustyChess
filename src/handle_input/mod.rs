@@ -221,6 +221,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         board.grid.insert(og_square.clone(),None);
         piece_moving.square = new_move.square.clone();
         board.grid.insert(new_move.square.clone(),Some(piece_moving.clone()));
+
         let check = match check_checker(board) {
             Ok(()) => false,
             Err(MoveError::Check) => true,
@@ -288,8 +289,56 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     x:'3'.to_string(),
                     y:'1'.to_string(),
                 };
+ 
                 {
-                    let king_list = match board.piece_registry.get_mut(&(Kind::King,board.turn.clone())) {
+                   let mut piece_moving = match board.grid.get(&king_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+
+                    piece_moving.moved = true;
+                    board.grid.insert(king_space.clone(),None);
+                    piece_moving.square = queen_side_king.clone();
+                    board.grid.insert(queen_side_king.clone(),Some(piece_moving.clone())); 
+                }
+
+       
+                {                   
+                    let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("this should never happen"),
+                    };
+
+                    piece_moving.moved = true;
+                    board.grid.insert(rook_space.clone(),None);
+                    piece_moving.square = queen_side_rook.clone();
+                    board.grid.insert(queen_side_rook.clone(),Some(piece_moving.clone()));
+                }
+
+                let check = match check_checker(board) {
+                    Ok(()) => false,
+                    Err(MoveError::Check) => true,
+                    Err(err) => return Err(err),
+                };
+
+                if check {
+                    let mut piece_moving = match board.grid.get(&queen_side_king).unwrap() {
+                        Some(i) => i.clone(),
+                        None => panic!("it happened"),
+                    };
+
+                    piece_moving.moved = false;
+                    board.grid.insert(queen_side_king.clone(),None);
+                    piece_moving.square = king_space.clone();
+                    board.grid.insert(king_space.clone(),Some(piece_moving.clone()));
+
+                    let mut piece_moving = match board.grid.get(&queen_side_rook) {
+                    };
+                }
+
+
+               {
+                    let king_list = match board.piece_registry.get_mut(&(Kind::King,board.turn)) {
                         Some(i) => i,
                         None => return Err(MoveError::NoPieceToMove),
                     };
@@ -297,33 +346,14 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                     king_list.insert(queen_side_king.clone()); 
                 }
                 {
-                    let rook_list = match board.piece_registry.get_mut(&(Kind::Rook,board.turn.clone())) {
+                    let rook_list = match board.piece_registry.get_mut(&(Kind::Rook,board.turn)) {
                         Some(i) => i,
                         None => return Err(MoveError::NoPieceToMove),
                     };
                     rook_list.remove(&rook_space);
                     rook_list.insert(queen_side_rook.clone());
-                }       
-                {                   
-                    let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
-                        Some(i) => i.clone(),
-                        None => panic!("this should never happen"),
-                    };
-                    piece_moving.moved = true;
-                    board.grid.insert(rook_space.clone(),None);
-                    piece_moving.square = queen_side_rook.clone();
-                    board.grid.insert(queen_side_rook,Some(piece_moving.clone()));
                 }
-                {
-                   let mut piece_moving = match board.grid.get(&rook_space).unwrap() {
-                        Some(i) => i.clone(),
-                        None => panic!("this should never happen"),
-                    };
-                    piece_moving.moved = true;
-                    board.grid.insert(king_space,None);
-                    piece_moving.square = queen_side_king.clone();
-                    board.grid.insert(queen_side_king,Some(piece_moving.clone())); 
-                }
+
                 board.turn = match board.turn {
                     Color::Black => Color::White,
                     Color::White => Color::Black,

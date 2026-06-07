@@ -43,7 +43,7 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool
     let mut down = downy >= 1;
     let mut up = upy <= 8;
     let mut all_moves = right || left || down || up;
-    let mut en_passant = false;
+    let en_passant = false;
     while all_moves {
         if right && !pawn {
             let mut blocked = false;
@@ -136,11 +136,11 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool
 
                     let y_value = match prev_square.y.parse::<i32>() {
                         Ok(t) => t,
-                        Err(e) => panic!("rust makes no sense"),
+                        Err(_e) => panic!("rust makes no sense"),
                     };
                     let x_value = match check_prev.1.y.parse::<i32>() {
                         Ok(t) => t,
-                        Err(e) => panic!("this is crazy code"),
+                        Err(_e) => panic!("this is crazy code"),
                     };
                     let test2 = y_value.abs_diff(x_value) == 2 && check_prev.1 == potential_square;
                     if test1 && test2 {
@@ -190,11 +190,11 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool
 
                     let y_value = match prev_square.y.parse::<i32>() {
                         Ok(t) => t,
-                        Err(e) => panic!("rust makes no sense"),
+                        Err(_e) => panic!("rust makes no sense"),
                     };
                     let x_value = match check_prev.1.y.parse::<i32>() {
                         Ok(t) => t,
-                        Err(e) => panic!("this is crazy code"),
+                        Err(_e) => panic!("this is crazy code"),
                     };
                     let test2 = y_value.abs_diff(x_value) == 2 && check_prev.1 == potential_square;
                     if test1 && test2 {
@@ -380,7 +380,7 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
     Ok(moves)
 }
 
-fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
+fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board,_checker: bool) -> Result<Vec<Square>,MoveError> {
     let mut horizontal = match horizontal(limit,&new_move,pawn,board,false) {
         Ok(list) => list,
         Err(m) => return Err(m),
@@ -469,7 +469,7 @@ fn castle(new_move: &Move,board: &Board) -> Result<Vec<Square>,MoveError> {
             y:king_space.y.clone(),
         };
         match board.grid.get(&temp_square) {
-            Some(t) => return Err(MoveError::Castling),
+            Some(_t) => return Err(MoveError::Castling),
             None => continue,
         }
     }

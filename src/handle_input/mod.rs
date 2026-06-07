@@ -56,7 +56,7 @@ pub fn take_input() -> String {
 //might make this into a method for board later. seems fitting 
 fn check_checker(board: &Board) -> Result<(),MoveError> { 
     let square = board.piece_registry.get(&(Kind::King,board.turn)).unwrap().iter().next().unwrap().clone(); 
-    for (key,value) in board.grid.iter() {
+    for (_key,value) in board.grid.iter() {
         let piece = match value {
             Some(t) => if t.color == board.turn { continue }
                 else { t.clone() },
@@ -96,7 +96,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         Err(m) => return Err(m),
     };
 
-    let mut en_passant = match board.prev_move.clone() {
+    let en_passant = match board.prev_move.clone() {
         Some(t) => t.2,
         None => false, 
     };
@@ -190,7 +190,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         let points = new_move.capture;
         let mut og_square = Square {x:potential_moves[0].x.clone(),y:potential_moves[0].y.clone()};
         {
-        let mut piece_moving = match board.grid.get(&og_square).unwrap() {
+        let piece_moving = match board.grid.get(&og_square).unwrap() {
             Some(i) => i.clone(),
             None => panic!("this should never happen"),
         };

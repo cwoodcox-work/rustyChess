@@ -16,7 +16,7 @@ pub struct Board {
     pub turn: Color,
     pub score: HashMap<Color,u32>,
     pub move_count: u32,
-    pub prev_move: Option<(Piece,Square,bool)>,
+    pub prev_move: Option<(Piece,Square,bool,u32)>,
     pub piece_registry: HashMap<(Kind,Color),HashSet<Square>>,
     pub check:Option<Color>,
 }
@@ -57,7 +57,7 @@ impl Board {
         ]);
         let prev_move = None;
 
-        let count: u32 = 0;
+        let count: u32 = 1;
         let check = None;
         let mut board = Self {
             grid,
@@ -142,8 +142,74 @@ impl Board {
             }
             if y != 1i32 {
                 result.push('/');
+            } else {
+                result.push(' ');
             }
         }
+        match self.turn {
+            Color::White => result.push_str("w "),
+            Color::Black => result.push_str("b "),
+        }
+        let mut castle_rights = String::new();
+        let black_king = Square {x:5.to_string(),y:8.to_string()};
+        let white_king = Square {x:5.to_string(),y:1.to_string()};
+        if let Some(i) = self.grid.get(&white_king).unwrap() && !i.moved {
+                if let Some(j) = self.grid.get(&Square {x:8.to_string(),y:1.to_string()}).unwrap() && !j.moved {
+                        castle_rights.push('K');
+                    }
+                if let Some(r) = self.grid.get(&Square {x:1.to_string(),y:1.to_string()}).unwrap() && !r.moved {
+                        castle_rights.push('Q');
+                    }
+        }
+        if let Some(i) = self.grid.get(&black_king).unwrap() && !i.moved {
+                if let Some(j) = self.grid.get(&Square {x:8.to_string(),y:8.to_string()}).unwrap() && !j.moved {
+                        castle_rights.push('k');
+                }
+                if let Some(r) = self.grid.get(&Square {x:1.to_string(),y:8.to_string()}).unwrap() && !r.moved {
+                        castle_rights.push('q');
+                }
+        }
+        if castle_rights.is_empty() {
+            result.push_str("- ");
+        } else {
+            result.push_str(&castle_rights[..]);
+            result.push(' ');
+        }
+        if let Some(i) = &self.prev_move {
+            if i.0.kind == Kind::Pawn {
+                let old_y = i.0.square.y.clone().parse::<i32>().expect("failed to parse");
+                let new_y = i.1.y.clone().parse::<i32>().expect("failed to parse");
+                if (new_y - old_y).abs() > 1 {
+                    let x = match &i.0.square.x[..] {
+                        "1" => 'a',
+                        "2" => 'b',
+                        "3" => 'c',
+                        "4" => 'd',
+                        "5" => 'e',
+                        "6" => 'f',
+                        "7" => 'g',
+                        "8" => 'h',
+                        _ => panic!("what did you do?!?!?!?!"),
+                    };
+                    result.push(x);
+                    result.push_str(&(new_y - 1).to_string()[..]);
+                    result.push(' ');
+                } else {
+                    result.push_str("- ");
+                }
+            } else {
+                result.push_str("- ");
+            }
+            result.push_str(&i.3.to_string()[..]);
+            result.push(' ');
+            result.push_str(&self.move_count.to_string()[..]);
+        } else {
+            result.push_str("- ");
+            result.push_str("0 ");
+            result.push_str(&self.move_count.to_string()[..])
+        }
+
+ 
         result
     }
     

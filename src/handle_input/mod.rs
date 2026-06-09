@@ -125,7 +125,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         let temp_original_square = original_square.clone();
  
         piece_moving.moved = true;
-        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
+        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false,0));
         board.grid.insert(original_square.clone(),None);
         piece_moving.square = new_move.square.clone();
         board.grid.insert(new_move.square.clone(),Some(piece_moving.clone()));
@@ -221,9 +221,10 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         let temp_piece_moving = piece_moving.clone();
         let temp_new_move = new_move.clone();
         let temp_original_square = og_square.clone();
+        let half_move = if piece_moving.kind == Kind::Pawn || points.0 {0} else {board.prev_move.clone().unwrap().3 + 1};
 
         piece_moving.moved = true;
-        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false));
+        board.prev_move = Some((piece_moving.clone(),new_move.square.clone(),false,half_move));
         board.grid.insert(og_square.clone(),None);
         piece_moving.square = new_move.square.clone();
         board.grid.insert(new_move.square.clone(),Some(piece_moving.clone()));
@@ -242,7 +243,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
         }
 
         {
-            let piece_list = match board.piece_registry.get_mut(&(new_move.kind.clone(),board.turn)) {
+            let piece_list = match board.piece_registry.get_mut(&(new_move.kind,board.turn)) {
                 Some(i) => i,
                 None => return Err(MoveError::NoPieceToMove),
             };
@@ -260,7 +261,7 @@ pub fn move_handler(board: &mut Board, input: String)  -> Result<(), MoveError> 
                 None => panic!("Shouldn't happen"),
             };                
             let old_kind = match board.grid.get(&new_move.square).unwrap() {
-                    Some(i) => (i.kind.clone(),i.color),
+                    Some(i) => (i.kind,i.color),
                     None => panic!("this should never happend since we know this is a capture"),
             };
             {

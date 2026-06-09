@@ -7,11 +7,14 @@ use crate::handle_input::take_input;
 
 pub fn start() {
     let mut board: Board = Board::initialize_board();
+    let fen = board.generate_fen();
+    print!("{fen}");
+    print!("\n");
     board.print_board();
     loop {
         let input = take_input();
         match board.update_board(input) {
-            Ok(_) => board.print_board(),
+            Ok(_) => {let fen = board.generate_fen(); print!("{fen}"); print!("\n"); board.print_board();},
             Err(e) => print!("{e}"),
         }
         board.show_score();

@@ -97,6 +97,57 @@ impl Board {
             println!("{row}");
         }
     }
+    pub fn generate_fen(&self) -> String {
+        let mut result = String::new();
+        for y in (1..=8).rev() {
+            let mut empty_squares: u32 = 0;
+            for x in 1..=8 {
+                let square = Square {
+                    x:x.to_string(),
+                    y:y.to_string(),
+                };
+                if let Some(i) = self.grid.get(&square).unwrap() {
+                    if empty_squares > 0u32 {
+                        result.push_str(&empty_squares.to_string()[..]);
+                        empty_squares = 0;
+                    }
+                    result.push_str(
+                    if i.color == Color::White { 
+                        match i.kind {
+                        Kind::Rook => "R",
+                        Kind::Bishop => "B",
+                        Kind::King => "K",
+                        Kind::Queen => "Q",
+                        Kind::Knight => "N",
+                        Kind::Pawn => "P",
+                        _ => "0",
+                        }
+                    }else {
+                        match i.kind {
+                        Kind::Rook => "r",
+                        Kind::Bishop => "b",
+                        Kind::King => "k",
+                        Kind::Queen => "q",
+                        Kind::Knight => "n",
+                        Kind::Pawn => "p",
+                        _ => "0",
+                        }
+                    });
+                } else {
+                    empty_squares += 1;
+                    if x == 8i32 {
+                        result.push_str(&empty_squares.to_string()[..]);
+                    }
+                }
+            }
+            if y != 1i32 {
+                result.push('/');
+            }
+        }
+        result
+    }
+    
+
 
     pub fn show_score(&self) {
         let white = self.score.get(&Color::White).unwrap();

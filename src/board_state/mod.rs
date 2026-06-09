@@ -84,19 +84,10 @@ impl Board {
                         x:x.to_string(),
                         y:y.to_string(),
                     };
-                    let mut piece_string: &str = " ";
+                    let mut piece_string: &str = " "; 
                     if let Some(i) = self.grid.get(&square).unwrap() {
-                        let piece = i;
-                        piece_string = match piece.kind {
-                        Kind::Rook => "R",
-                        Kind::Knight => "N",
-                        Kind::Bishop => "B",
-                        Kind::Queen => "Q",
-                        Kind::King => "K",
-                        Kind::Pawn => "P",
-                        Kind::Castle => "O",
-                        };
-                    }
+                        piece_string = i.symbol();
+                    };
                     row.push_str(piece_string);
                 }
                 else {
@@ -139,20 +130,20 @@ fn create_initial_pieces (grid: &mut HashMap<Square,Option<Piece>>,registry: &mu
                 y:y.clone(),
             };
             let piece: Piece = Piece {
-                kind: key.clone(),
-                color: color.clone(),
+                kind: *key,
+                color,
                 square: square.clone(),
                 moved: false,
             };
-            let kind = key.clone();
-            let reg_key = (kind,color.clone());
+            let kind = key;
+            let reg_key = (*kind,color);
             if let Some(i) = registry.get_mut(&reg_key) {
                 i.insert(square);
             }
             else {
                 registry.entry(reg_key).or_insert(HashSet::from([square]));
             }
-            grid.insert(Square { x:x, y:y },Some(piece));
+            grid.insert(Square { x, y },Some(piece));
         }
     }
 }

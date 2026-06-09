@@ -68,6 +68,11 @@ fn check_checker(board: &Board) -> Result<(),MoveError> {
             Color::White => ('0','1'),
             Color::Black => ('1','0'),
         };
+//        dbg!(square.clone());
+        dbg!(value);
+//        dbg!(piece.kind);
+        dbg!(kolor);
+        board.print_board();
         let check_move = Move { capture: (false,0), square:square.clone(), kind:piece.kind, old_mov: kolor, };
         let check_or_no = match find_potential_moves(&check_move,&board,true) {
             Ok(mov) => mov,
@@ -76,6 +81,7 @@ fn check_checker(board: &Board) -> Result<(),MoveError> {
         if check_or_no.is_empty() {
             continue;
         } else { 
+            dbg!(check_or_no);
             return Err(MoveError::Check);
         }
     }

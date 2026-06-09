@@ -6,6 +6,7 @@ use crate::pieces::Kind;
 use crate::pieces::Color;
 
 pub fn find_potential_moves(new_move: &Move,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
+    dbg!("checking checker",checker);
     let potential_moves = match new_move.kind {
         Kind::Rook => horizontal(false,new_move, false,board,checker),
         Kind::Bishop => diagonal(false,new_move, false,board,checker),
@@ -16,9 +17,9 @@ pub fn find_potential_moves(new_move: &Move,board: &Board,checker: bool) -> Resu
         Kind::Castle => castle(new_move,board),
     };
     match potential_moves {
-        Ok(i) => return Ok(i),
-        Err(m) => return Err(m),
-    };
+        Ok(i) => Ok(i),
+        Err(m) => Err(m),
+    }
 }
 
 fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
@@ -28,10 +29,16 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool
             if new_move.old_mov == ('0','1') { Color::Black } 
             else { Color::White }}
         else { board.turn };
-    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),color)) {
+    dbg!(&new_move.old_mov);
+    dbg!(&checker);
+    let piece_list = match board.piece_registry.get(&(new_move.kind,color)) {
         Some(i) => i,
         None => return Err(MoveError::NoPieceToMove),
     };
+
+    dbg!(x);
+    dbg!(y);
+    dbg!(piece_list);
     let mut pawn_count = 1;
     let mut upx: u32 = x+1;
     let mut upy: u32 = y+1;
@@ -49,12 +56,13 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool
             let mut blocked = false;
             let potential_square = Square {x:upx.to_string(),y:y.to_string()};
             let occupied = match board.grid.get(&potential_square).unwrap() {
-                Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
+                Some(i) => Some(i.color == color && i.kind == new_move.kind),
                 None => None,
             };
             match occupied {
                 Some(i) => if i {
                     blocked = true;
+                    dbg!("right",potential_square.clone());
                     for sq in piece_list {
                         if *sq == potential_square {
                             moves.push(potential_square);
@@ -79,12 +87,13 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool
             let mut blocked = false;
             let potential_square = Square {x:downx.to_string(),y:y.to_string()};
             let occupied = match board.grid.get(&potential_square).unwrap() {
-                Some(i) => Some(i.color == board.turn && i.kind == new_move.kind),
+                Some(i) => {dbg!(&i,color); Some(i.color == color && i.kind == new_move.kind)},
                 None => None,
             };
             match occupied {
                 Some(i) => if i {
                     blocked = true;
+                    dbg!("left",potential_square.clone());
                     for sq in piece_list {
                         if *sq == potential_square {
                             moves.push(potential_square);
@@ -117,6 +126,7 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool
                     blocked = true;
                     for sq in piece_list {
                         if *sq == potential_square {
+                            dbg!("up",potential_square.clone());
                             moves.push(potential_square);
                             break;
                         }
@@ -171,6 +181,7 @@ fn horizontal(limit: bool,new_move: &Move,pawn: bool,board: &Board,checker: bool
                     blocked = true;
                     for sq in piece_list {
                         if *sq == potential_square {
+                            dbg!("down",potential_square.clone());
                             moves.push(potential_square);
                             break;
                         }
@@ -240,7 +251,7 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
             if new_move.old_mov == ('0','1') { Color::Black } 
             else { Color::White }}
         else { board.turn };
-    let piece_list = match board.piece_registry.get(&(new_move.kind.clone(),color)) {
+    let piece_list = match board.piece_registry.get(&(new_move.kind,color)) {
         Some(i) => i,
         None => return Err(MoveError::NoPieceToMove),
     };
@@ -271,6 +282,7 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
                         blockedur = true;
                         for sq in piece_list {
                             if *sq == potential_square {
+                                dbg!("rightup",potential_square.clone());
                                 moves.push(potential_square);
                                 break;
                             }
@@ -296,6 +308,7 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
                         blockedul = true;
                         for sq in piece_list {
                             if *sq == potential_square {
+                                dbg!("leftup",potential_square.clone());
                                 moves.push(potential_square);
                                 break;
                             }
@@ -323,6 +336,7 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
                         blockeddr = true;
                         for sq in piece_list {
                             if *sq == potential_square {
+                                dbg!("rightdown",potential_square.clone());
                                 moves.push(potential_square);
                                 break;
                             }
@@ -348,6 +362,7 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
                         blockeddl = true;
                         for sq in piece_list {
                             if *sq == potential_square {
+                                dbg!("leftdown",potential_square.clone());
                                 moves.push(potential_square);
                                 break;
                             }
@@ -380,12 +395,12 @@ fn diagonal(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool
     Ok(moves)
 }
 
-fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board,_checker: bool) -> Result<Vec<Square>,MoveError> {
-    let mut horizontal = match horizontal(limit,&new_move,pawn,board,false) {
+fn combine_movement(limit: bool, new_move: &Move, pawn: bool,board: &Board,checker: bool) -> Result<Vec<Square>,MoveError> {
+    let mut horizontal = match horizontal(limit,&new_move,pawn,board,checker) {
         Ok(list) => list,
         Err(m) => return Err(m),
     };
-    let mut diagonal = match diagonal(limit,&new_move,pawn,board,false) {
+    let mut diagonal = match diagonal(limit,&new_move,pawn,board,checker) {
         Ok(list) => list,
         Err(m) => return Err(m),
     };

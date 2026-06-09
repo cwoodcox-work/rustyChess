@@ -7,6 +7,7 @@ use crate::handle_input::take_input;
 
 pub fn start() {
     let mut board: Board = Board::initialize_board();
+    board.print_board();
     loop {
         let input = take_input();
         match board.update_board(input) {
